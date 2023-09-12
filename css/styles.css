@@ -1,0 +1,210 @@
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+} 
+
+html {
+  background:#bbb;
+  max-width:1600px;
+  margin:auto;
+}
+
+h1, h2, h3, p, a {
+  font-family: 'Nunito Sans', sans-serif;
+}
+
+body {
+  margin:0;
+  padding:0;
+  overflow-x:hidden;
+  animation: fadeIn 0.5s;
+}
+
+.main {
+  background:#ddd;
+  width:90%;
+  display:flex;
+  flex-direction:column;
+  padding:0 5%;
+}
+
+header {
+  position:sticky;
+  top:0;
+  height:50px;
+  display:flex;
+  align-content:center;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  align-items:center;
+  justify-content:space-around;
+  background-color:#bcbcbc;
+  width:90%;
+  box-shadow: 0 1px 10px #999;
+  padding:0 5%;
+  z-index:10;
+}
+
+.header-main {
+  font-weight:bold;
+  font-size:25px;
+  text-decoration:none;
+  color:black;
+}
+
+header a {
+  font-size:15px;
+  text-decoration:none;
+  color:black;
+}
+
+a {
+  color:black;
+  transition:0.3s;
+}
+
+a:hover {
+  color:#888;
+}
+
+/* Hide the link that should open and close the topnav on small screens */
+header .menu {
+  display: none;
+}
+
+.cool-edge {
+  width:100%;
+  height:50vw;
+  max-height:400px;
+  background-color:#bbb;
+  background-size:cover;
+  background-repeat:no-repeat;
+  background-position:center;
+  /* background-attachment:fixed; */ /* this can be turned on for parallax scrolling */
+  z-index:5;
+  position:relative;
+  margin-top: -5%;
+}
+
+.cool-edge::before {
+  transform:skewX(-10deg);
+  transform-origin:top right;
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  right:0;
+  left:0;
+  height:100%;
+  width:65%;
+  background-color:rgba(0,0,0,0.5);
+}
+
+.cool-edge .subject {
+  padding:0 0 0 2.5rem;
+  position:relative;
+  max-width:40rem;
+  color:white;
+  top:175px;
+  width:50vw;
+}
+
+.image-right img, .image-left img {
+  width:33%;
+  max-width:250px;
+  margin:auto;
+  padding:1.25% 2.5%;
+}
+
+.image-right img {
+  float:right;
+}
+
+.image-left img {
+  float:left;
+}
+
+footer {
+  border-top: 5px solid #999;
+  background:#bbb;
+  height:50px;
+  display:flex;
+  align-content:center;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  align-items:center;
+  justify-content:space-around;
+  width:100%;
+  padding:25px 0;
+}
+
+footer img {
+  width:50px;
+}
+
+@media (max-width:800px) {
+  .cool-edge {
+    height:30vh;
+    max-height:none;
+  }
+
+  .cool-edge::before {
+    transform:none;
+    width:100%;
+  }
+
+  .cool-edge .subject {
+    padding:0;
+    margin:0 auto;
+    top:40%;
+    width:100%;
+    text-align:center;
+  }
+
+  img {
+    width:100%;
+  }
+
+  header a:not(:first-child) {
+    display: none;
+  }
+
+  header a.menu {
+    float: right;
+    display: block;
+  }
+  
+  header.responsive {
+    position: relative;
+    display:flex;
+    flex-direction:column;
+    height:25vh;
+    max-height:fit-content;
+  }
+
+  header.responsive a.menu {
+    position: absolute;
+    right: 25px;
+    top: 25px;
+    background:#aaa;
+    border-radius:25px;
+    padding:2%;
+  }
+
+  header.responsive a {
+    float: none;
+    display: block;
+    text-align: left;
+  }
+
+  .image-left img, .image-right img {
+    width:50%;
+  }
+}
+
+@media (min-width:1600px) {
+  .cool-edge::before {
+    transform:none;
+    width:100%;
+  }
+}
