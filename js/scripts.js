@@ -2,6 +2,8 @@ function toggleNav() {
     var x = document.getElementById("nav");
     if (x.className === "nav") {
       x.className += " responsive";
+      document.body.scrollTop = 0; // for Safari
+      document.documentElement.scrollTop = 0; // for everyone else
     } else {
       x.className = "nav";
     }
