@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+  <head>
+    <link rel="stylesheet" href="css/styles.css"></style>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,700;1,6..12,400;1,6..12,700&display=swap');</style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Experiments in blockchain rooted in the Five Card Trick. First published in May 2025.">
+    <meta name="author" content="Nick Muskopf-Stone">
+    <title>Adventures in Cryptography: From Playing Cards to Blockchain | Nick Muskopf-Stone</title>
+  </head>
+  <body>
+    <header class="nav" id="nav">
+      <a class="header-main" href="index.html">Nick Muskopf-Stone</a>
+      <a href="projects.html">My Projects</a>
+      <a href="javascript:void(0);" class="menu" onclick="toggleNav()">
+        <i class="fa fa-bars"></i>
+      </a>
+    </header>
+    <div class="cool-edge" style="background-image:url('assets/img/crypto-banner-1.png');">
+      <div class="subject">
+        <h1>Adventures in Cryptography: From Playing Cards to Blockchain</h1>
+        <p>Some Experiments in Protecting Secrets</p>
+      </div>
+    </div>
+<!-- main -->
+    <div class="main">
+      <h2>Let Me Show You a Card Trick</h2>
+      <div>
+        <p>I have always been fascinated by new methods of communication. There's something interesting about finding an encoded piece of information and using tools at my disposal to translate it into something that makes sense, whether they be online codebreakers or simply hashing it out on a piece of paper. Some of my favorite examples include the <a target="_blank" href="https://www.bzpower.com/blogs/entry/7915-sebald-code-for-dummies/">Sebald Code</a>, <a target="_blank" href="https://en.wikipedia.org/wiki/Cipher_Hunt">the Cipher Hunt ARG</a>, and most recently <a target="_blank" href="http://www.gamemastertips.com/cipher/cipher.htm"><i>Cipher</i>, the online riddle</a>,</p>
+        <p>This curiosity naturally carried over to my studies. As a security-minded student in college, I enrolled in a cryptography course to learn more about the systems and means by which information is kept secure. As we covered the section of zero-knowledge proofs, we performed an exercise that opened my eyes not only to breaking ciphers, but also how to <i>engineer</i> them from the ground up.</p>
+        <p>This exercise uses five playing cards, three red and two black, each with identical backs. The two parties, traditionally named Alice and Bob, each draw one red and one black card, leaving the extra red card face-up on a table. They will encode their private bits (1 or 0) by the choice of which color is placed nearer that center card, then jointly obscure the arrangement through secret rotations.</p>
+        <ol>
+          <li>Bob looks away. Alice chooses bit <code>1</code> by placing her red card closest to the center card (or bit <code>0</code> by using black), then flips her two cards face-down and turns away.</li>
+          <li>After Alice turns away, Bob repeats: he selects red near center for <code>1</code> (black for <code>0</code>), then places his cards face-down and turns away.</li>
+          <li>Alice turns to view the five face-down cards in a line, rearranges them into a circle, and secretly rotates the circle by a random 0-4 positions clockwise.</li>
+          <li>Alice looks away, and Bob applies his own secret 0-4 position clockwise rotation.</li>
+          <li>Both flip all cards face-up. If the three red cards now appear consecutively, then Alice and Bob's bits were both <code>1</code>. Otherwise, at least one bit is <code>0</code>.</li>
+        </ol>
+        <p>This simple experiment is a recreation of Bert den Boer's <i>Five Card Trick</i>, first published in 1989. This experiment is a clever physical demonstration of <i>Zero-Knowledge Proofs (ZKPs)</i>, a cryptographic technique that allows one party to convince the other that a statement is true without revealing any additional information. While not foundational in the development of ZKPs, it serves as a launchpad for educational tools and further exploration into using tangible items like playing cards for privacy-preserving logical computations.</p>
+      </div>
+      <details>
+        <summary>Click to see an illustrated example of the <i>Five Card Trick</i>.</summary>
+        <div>
+          <h3>Illustrated Example of the <i>Five Card Trick</i></h3>
+          <div class="image-both">
+            <div>
+              <img src="assets/img/fivecardtrick-1.png" alt="Illustration of a circle of 5 cards, with the center card face-up and all others face-down. Alice and Bob's picks are highlighted." />
+              <p>In the first stage of this experiment, Alice and Bob make their selections in confidence while the center card remains face-up. Alice's vote is to the right, and Bob's vote is to the left.</p>
+            </div>
+            <div>
+              <img src="assets/img/fivecardtrick-2.png" alt="Illustration of a circle of 5 cards, all face-down. The circle is rotation 0-4 times by Alice and Bob respectively." />
+              <p>In the second stage, the center card is flipped over and the entire circle is rotated 0-4 times clockwise by Alice, then by Bob.</p>
+            </div>
+          </div>
+          <div class="image-both">
+            <div>
+              <img src="assets/img/fivecardtrick-3.png" alt="Illustration of a circle of 5 cards, all face-up. In this example, three red cards are next to each other, indicating that both Alice and Bob voted 1 and the result of bitwise AND is 1." />
+              <p>In the event that both Alice and Bob voted 1 (they put their red cards closest to the center card), then no matter how many rotations, the result will be 1. Because the suit and back of the cards are identical, no proof is needed for either party to prove their part of the scheme aside from the result.</p>
+            </div>
+            <div>
+              <img src="assets/img/fivecardtrick-4.png" alt="Illustration of a circle of 5 cards, all face-up. In this example, there are no chains of three red cards, indicating that either Alice or Bob voted 0 and the result of bitwise AND is 0." />
+              <p>In the event that either Alice or Bob voted 0 (they put their black cards closest to the center card), then no matter how many times the cards have been rotated, the result will be 0. Like earlier, no proof is required from either party to prove their part of the scheme aside from the result.</p>
+            </div>
+          </div>
+        </div>
+      </details>
+      <div>
+        <p>ZKPs and secure multiparty computation are advanced cryptographic techniques that enhance privacy and security in modern technologies, such as cryptocurrency and blockchain. In the <i>Adventures in Cryptography</i> series, I will explore some of the technologies surrounding this experiment and related topics in cryptography. These topics include:</p>
+        <ul>
+          <li>First, we will cover <strong>Blockchain</strong>, where I will emulate blockchain logic through a voting system hosted on Railway.</li>
+          <li>Next, we will look at <strong>Quantum cryptography</strong>, where I will demonstrate some popular crytographic techniques using Jupyter notebooks.</li>
+          <li>Finally, we will dive into <strong>Cryptanalysis</strong>, where I will showcase how to break certain ciphers and cryptographic techniques using a web app hosted on Railway.</li>
+        </ul>
+      </div>
+      <h2>Experiments in Blockchain</h2>
+      <div>
+        <p>I thought a practical example of how to demonstrate blockchain technology would be in the form of a <b>voting system</b>, which simulates the logic of blockchain protocols in a fun and interactive manner. I will walk through how the voting system was put together and provide links to access the prototype and my GitHub repository where you can replicate the example on your local machine.</p>
+      </div>
+      <h3>Defining the Scope</h3>
+      <div>
+        <p>The first task is to plan what the system can do and how users will be able to interact with it. Here is a general rundown:</p>
+        <ul>
+          <li>The app should be able to record <b>exactly one vote</b> from each user.</li>
+          <li>Voting should be kept <b>anonymous</b>.</li>
+          <li>Votes are stored on the <b>blockchain</b>, where each vote equals one transaction.</li>
+          <li>A final tally can be computed from the <b>chain</b>.</li>
+        </ul>
+        <p>With this in mind we can hash out the basic blockchain components:</p>
+        <ul>
+          <li>The <b>block</b> will hold vote transactions.</li>
+          <li>The <b>chain</b> consists of a list of blocks linked via cryptographic hashes.</li>
+          <li>The <b>proof of work</b> will be simplified, but it will still serve its purpose as an integral part of the solution.</li>
+          <li>For ease of simulation we will stick to one node and skip the consensus step.</li>
+        </ul>
+        <p>The basic block structure is pictured below.</p>
+      </div>
+      <img src="assets/img/blockchain-block.png" alt="Pseudocode description of a Block in the blockchain." style="max-width:750px; align-self:center"/>
+      <h3>Crafting the Backend</h3>
+      <div class="image-right">
+        <p>Using Python as our language of choice, we can begin building the functionality behind our blockchain. We start with the <b><code>Blockchain</code></b> class, which includes these key methods:</p>
+        <img src="assets/img/blockchain-chain.png" alt="Pictoral representation of the Chain, including self-referential methods and the leaderboard." />
+        <ul>
+          <li>The <b>constructor</b>, where the chain and votes are set to empty lists and the first block is created. The first block's proof is <code>1</code> and the previous hash is <code>'0'</code>. The block itself is created in <code>create_genesis_block</code>.
+          </li>
+          <li>A method to <b>create a block</b>, where we use the foundation from earlier to create a new block and append it to the end of the chain. We pass in a <code>proof</code> and a <code>previous_hash</code> which are defined elsewhere.</li>
+          <li>A method to <b>add a vote</b>, which simply appends a <code>voter_id</code> and a <code>candidate</code> to the voting list.</li>
+          <li>A method to implement a <b>proof of work</b> algorithm. This involves repeatedly calculating the SHA-256 hash of the concatenation of <code>last_proof</code> and <code>proof</code>, which is converted to a string and encoded to bytes before being hashed. If the resulting hash starts with four zeroes, it is considered valid and the function returns <code>new_proof</code>. This method is a nice way to achieve consensus in a decentralized system (i.e. if we included more nodes and required a consensus step).</li>
+          <li>A method to quickly calculate the <b>hash</b>, which dumps and encodes the json blocks of a <code>block</code> and returns the SHA-256 hash of that block. Note that <code>sort_keys=True</code> in this demonstration.</li>
+          <li>A method to <b>get the previous block</b>, which returns the element block just behind the head of the chain. Later this method becomes a <code>@property</code> of the <code>Blockchain</code> class.</li>
+        </ul>
+        <p>On the frontend, we expose this functionality via Flask routes. Here are some of the initial routes I created:</p>
+        <ul>
+          <li><b>/vote [POST]</b>, which captures a <code>voter_id</code> and <code>candidate</code>, adds a vote to the blockchain, then returns <code>201 Created</code>. For convenience, I changed this method later to automatically mine a new block after casting a vote, condensing potentially multiple endpoints into one.</li>
+          <li><b>/votes [GET]</b>, which extends each block in the chain and extracts its votes. Returns the content of all votes as well as <code>200 OK</code>.</li>
+          <li><b>/mine [GET]</b>, which captures the previous block's <code>proof</code> and uses that to create a new block. Returns <code>200 OK</code>.</li>
+          <li>Various helper methods to view the <b>chain, pending votes</b>, and <b>candidates</b>. These will be incorporated later in our frontend.</li>
+        </ul>
+      </div>
+      <h3>Scaffolding the Frontend</h3>
+      <div>
+        <p>Now that the backend has been assembled, I needed a UI to put everything together. I settled on native React, which interfaces seamlessly with the backend Flask API. Key features of the React frontend include:</p>
+        <ul>
+          <li>Definition of global constants for <b>candidate images and background colors</b>.</li>
+          <li>Inclusion of <code>useState</code> hooks to track error and success messages.</li>
+          <li>A method to <b>retrieve the voter ID</b> from local storage, which generates a new ID using a combination of the current date and a random number as a fallback. Note that in production a more robust UUID library would be used to avoid collisions.</li>
+          <li>A method to <b>cast a vote</b>, which calls on the <code>/vote</code> and <code>/mine</code> routes to add a block to the chain, mine a new block, and effectively cast a vote.</li>
+          <li>A <b>primary modal</b> to display the frontend and allow users to vote in the poll.</li>
+        </ul>
+        <p>Later in development, the following features were added:</p>
+        <ul>
+          <li>A <b>leaderboard</b> to show which candidate is leading in the poll. This required a new backend method, Flask API route, and an accessor/mutator in the frontend.</li>
+          <li>The use of <code>useEffect + setInterval</code> to <b>constantly refresh the leaderboard</b>, which is helpful when the poll is highly active and many votes are being cast.</li>
+          <li><b>Axios</b>, a promise-based HTTP client used to interface with the backend and provide runtime flexibility.</li>
+          <li>A persistent <b>datastore</b> to save the results of the poll and easily reset the votes when a new topic is chosen</li>
+          <li><b>Rate limiting with <code>flask-limiter</code></b> to mitigate DoS and keep the datastore in check</li>
+        </ul>
+        <p>An early version of the voting modal is shown below.</p>
+      </div>
+      <img src="assets/img/blockchain-modal.png" alt="Modal mockup for the Blockchain Voting program" style="max-width:750px; align-self:center" />
+      <h3>Where does it live?</h3>
+      <div class="image-left">
+        <img src="assets/img/blockchain-railway.png" alt="Visualization showing the relationship between Railway and GitHub instances" />
+        <p>The next challenge was figuring out where to host the voting platform. It needed to be in a location that could run the Python backend and React frontend yet reserve resoruces and only serve the product when necessary. <b>Railway</b> addressed these needs by offering a platform that could host my infrastructure and serve it over the Internet. Railway provided some solutions that helped me bring my project into production:</p>
+        <ul>
+          <li>A <b>static service URL</b> for hosting the frontend and backend, allowing the frontend to communicate with the backend without manual domain setup.</li>
+          <li><b>Containerization via Docker</b>, keeping my code safe, deployable, and scalable for high user load.</li>
+          <li>Direct <b>integration with GitHub</b>, redeploying containers when new commits are made and taking snapshots of previous commits in the event of rollback.</li>
+          <li>The concept of <b>Monorepo</b>, allowing my frontend and backend services to live in different root directories in GitHub and exist within one Railway project.</li>
+          <li>Direct <b>SQL database interactivity</b> to easily spin up data stores in a variety of flavors and interact with them in just a few clicks. For this project, I chose MySQL.</li>
+          <li><b>Serverless instances</b>, which helped me conserve resources by spinning down and "sleeping" instances when not in use.</li>
+          <li>An attractive one-time <b>$5 credit</b> which allowed me to prototype my solution with no financial impact.</li>
+          <li><b>Deployment logs and metrics</b>, which were useful when my frontend and backend had issues that required debugging.</li>
+        </ul>
+        <p>Currently, my project sits within one GitHub repo. I made subfolders for the frontend and backend, storing the required files in each, and used Railway's Monorepo solution to host two endpoints for each subfolder. I have included an iframe below showing the finished product, which you can find <a target="_blank" href="https://github.com/nmuskopf/cipher-blockvote">here</a>.</p>
+      </div>
+      <div style="display: flex; justify-content: center">
+        <iframe class="voting-iframe" src="https://cipher-blockvote-frontend-production.up.railway.app/" title="Cipher Webapp"></iframe>
+      </div>
+      <h2>What's Next?</h2>
+      <div>
+        <p>In my next article in the <i>Adventures in Cryptography</i> series, I will cover some experiments in quantum cryptography and the creation of a cryptanalysis engine to encode text, decode ciphers, and take a guess at which cipher a given text is encoded in. There's plenty more content to explore in the world of cryptography!</p>
+      </div>
+      <h3>Sources</h3>
+      <div>
+        <p><a target="_blank" href="https://www.openai.com">OpenAI</a>: header image</p>
+        <p><a target="_blank" href="https://link.springer.com/chapter/10.1007/3-540-46885-4_23">Springer.com</a>: "More Efficient Match-Making and Satisfiability: <i>The Five Card Trick</i>, Bert den Boer, 1989.</p>
+      </div>
+<!-- footer -->
+      <p><i>Published May 2025</i></p>
+    </div>
+    <footer>
+      <a href="https://www.github.com/nmuskopf">
+        <img src="assets/img/github.png" alt="Click to visit my GitHub repository">
+      </a>
+      <a href="https://www.linkedin.com/in/nmuskopfstone">
+        <img src="assets/img/linkedin.png" alt="Click to visit my LinkedIn profile">
+      </a>
+      <a href="mailto:nick@nmuskopf.com">
+        <img src="assets/img/email.png" alt="Click to send me an email message at nick@nmuskopf.com">
+      </a>
+      <p>© 2025 Nick Muskopf-Stone</p>
+    </footer>
+  </body>
+  <script src="js/scripts.js"></script>
+</html>
