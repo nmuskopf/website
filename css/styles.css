@@ -10,7 +10,7 @@ html {
   transition:0.3s;
 }
 
-h1, h2, h3, p, a, ul, li {
+h1, h2, h3, p, a, ul, li, details {
   font-family: 'Nunito Sans', sans-serif;
 }
 
@@ -29,7 +29,7 @@ body {
   padding:0 5%;
 }
 
-.main h1, .main h2, .main h3, .main p, .main li {
+.main h1, .main h2, .main h3, .main p, .main li, .main details {
   color:white;
 }
 
@@ -126,9 +126,19 @@ header .menu {
   width:50vw;
 }
 
+details {
+  padding: 10px;
+  border: 3px solid #888;
+  border-radius: 10px;
+}
+
+.image-both {
+  display:flex;
+  margin-right: 2.5%;
+}
+
 .image-right img, .image-left img {
   width:33%;
-  max-width:250px;
   margin:auto;
   padding:1.25% 2.5%;
 }
@@ -139,6 +149,30 @@ header .menu {
 
 .image-left img {
   float:left;
+}
+
+.image-both div {
+  margin: 2.5%;
+}
+
+.image-both img {
+  margin: auto;
+  max-width: 100%;
+  padding: 1.25% 2.5%;
+}
+
+.voting-iframe {
+  height:650px;
+  display:flex;
+  justify-content:center
+}
+
+.gallery img {
+  max-width: 300px;
+}
+
+code {
+  font-size: large;
 }
 
 footer {
@@ -162,8 +196,9 @@ footer img {
 
 @media (max-width:800px) {
   .cool-edge {
-    height:30vh;
+    height:50vh;
     max-height:none;
+    background-position: center right;
   }
 
   .cool-edge::before {
@@ -174,7 +209,7 @@ footer img {
   .cool-edge .subject {
     padding:0;
     margin:0 auto;
-    top:40%;
+    top:25%;
     width:100%;
     text-align:center;
   }
@@ -215,28 +250,27 @@ footer img {
     text-align: left;
   }
 
+  .image-both {
+    flex-direction: column;
+    margin-right:5%;
+  }
+
+  .image-both img {
+    max-width: 100%;
+  }
+
   .image-left img, .image-right img {
     width:50%;
   }
 }
 
 @media (max-width:600px) {
-  .image-left img, .image-right img {
+  .image-left img, .image-right img, .image-both img {
     width:100%;
   }
 
   .main .image-left img, .image-right img {
     width: 50%;
-  }
-}
-
-@media (max-width:400px) {
-  .cool-edge { 
-    height: 50vh; 
-  }
-
-  .cool-edge .subject {
-    top: 25%;
   }
 }
 
