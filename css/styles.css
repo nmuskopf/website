@@ -270,7 +270,8 @@ footer img {
   }
 
   .main .image-left img, .image-right img {
-    width: 50%;
+    width: 70%;
+    margin: 0 15%;
   }
 }
 
