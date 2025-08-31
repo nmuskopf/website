@@ -280,4 +280,8 @@ footer img {
     transform:none;
     width:100%;
   }
+
+  .long-img {
+    max-width:250px;
+  }
 }

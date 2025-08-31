@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+  <head>
+    <link rel="stylesheet" href="css/styles.css"></style>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,700;1,6..12,400;1,6..12,700&display=swap');</style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Developing strategies to secure platforms at the root of execution. Published in August 2025.">
+    <meta name="author" content="Nick Muskopf-Stone">
+    <title>Chip Defense: The Secure Boot Project | Nick Muskopf-Stone</title>
+  </head>
+  <body>
+    <header class="nav" id="nav">
+      <a class="header-main" href="index.html">Nick Muskopf-Stone</a>
+      <a href="projects.html">My Projects</a>
+      <a href="javascript:void(0);" class="menu" onclick="toggleNav()">
+        <i class="fa fa-bars"></i>
+      </a>
+    </header>
+    <div class="cool-edge" style="background-image:url('assets/img/chip-defense-banner.png');">
+      <div class="subject">
+        <h1>Chip Defense: The Secure Boot Project</h1>
+        <p>Developing Strategies to Secure Platforms at the Root of Execution</p>
+      </div>
+    </div>
+<!-- main -->
+    <div class="main">
+      <h2>What is Secure Boot?</h2>
+      <div>
+        <p>In my experience dabbling with development boards, one area that I wish more developers touched on was the principle of <i>Secure Boot</i>. This idea comes the concept of attackers being able to hijack embedded devices and small form factor computers at the firmware level, taking advantage of the low security benchmarks of IoT devices and opening the door to many potential vulnerabilities, such as remote code execution and network traversal.</p>
+        <p>By securing IoT devices at the root of execution, we can introduce some peace of mind when it comes to cyberattacks. My strategy is threefold:</p>
+        <ul>
+          <li>First, I introduce a means of <b>creating verification firmware</b> that resides in a location of non-volatile memory. The computer is intended to run this portion of code first, forcing the end user's firmware to pass verification before execution.</li>
+          <li>Next, I append <b>asymmetric encryption signatures</b> to the firmware. In conjunction with the size and hash of the firmware itself, this signature is used by the verification program to verify that the end user's firmware is valid and can be executed.</li>
+          <li>Finally, I <b>test attacking the board</b> to demonstrate functionality of the two-pronged approach. Tests include appending a known bad signature to signed firmware and mismatching firmware and its signature.</li>
+        </ul>
+        <p>I will demonstrate this approach on a handful of development boards, including the ESP32 and Arduino Uno (ATmega328P). Later, I plan to append this article with more experiments to demonstrate the functionality of my secure boot approach, including the Raspberry Pi Zero 2 and the BeagleBone Black.</p>
+      </div>
+      <h2>Securing the ESP32</h2>
+      <div>
+        <p>The first board I implemented my secure boot strategy on was the ESP32. One of the nice parts about building software for the ESP32 is the ESP-IDF framework, which helped me avoid reinventing the wheel and made implementing my secure boot programs much easier.</p>
+        <p>The first part of the project was to develop the bootloader. Using the ESP-IDF CLI, I was able to quickly spin up a new project using <code>create-project</code>. I then needed to define a <b>custom partition table</b> for my bootloader to use when referencing locations in physical memory, such as the physical init location, firmware partitions, and its own starting location. You can view my partitions file <a href="https://www.github.com/nmuskopf/secureboot/blob/main/esp/partitions.csv" target="_blank">here</a>.</p>
+        <div class="image-right">
+          <img src="assets/img/secureboot-esp32metadata.png" alt="Contents of the metadata block appended to ESP32 secure firmware." style="max-width:750px; align-self:center"/>
+          <p>Next, we need to define a special block to append at the end of the firmware binary that will hold information for versioning, hashing, and signing. This is very important for the bootloader and signature verification process, as these fields are expected and the process will not work without their presence. The format of this block is shown to the right.</p>
+          <p>With the metadata and partitions defined, we can continue with developing the bootloader firmware. The full code can be seen <a href="https://www.github.com/nmuskopf/secureboot/blob/main/esp/main/bootloader_main.c" target="_blank">here</a>. Some functions I have implemented include:</p>
+          <ul>
+            <li><b>Verifying the firmware signature</b>, where the public key of the bootloader is parsed and verified against the firmware's metadata,</li>
+            <li><b>Verifying the firmware hash</b>, where the hash from firmware metadata is compared against a just-in-time computation of the firmware's hash,</li>
+            <li><b>The main function</b>, which runs some secondary checks to ensure the existence of firmware and that flash memory can be read correctly. There is also logic in <code>app_main</code> to compare the current version of firmware and the version in metadata, acting as a form of <b>rollback protection</b>.</li>
+          </ul>
+        </div>
+        <p>With the bootloader in place, we next move on to the <b>firmware signing tool</b>. This tool will be incredibly flexible and can be re-used for later boards, such as the ATMega328P, Raspberry Pi Zero 2, and the BeagleBone Black. The flow of the firmware signing tool is simple:</p>
+        <ol>
+          <li>Take as input a compiled firmware binary (<code>firmware.bin</code>)</li>
+          <li>Hash the binary using SHA-256</li>
+          <li>Sign the hash using RSA or ECDSA</li>
+          <li>Append or package the signature alongside the firmware</li>
+          <li>Output the metadata</li>
+        </ol>
+        <p>I decided to use Python to implement the firmware signing tool for its flexibility in typecasting and wide support for external libraries, such as <code>pycryptodome</code> which I use for cryptography. You can find the completed firmware signing tool <a href="https://www.github.com/nmuskopf/secureboot/blob/main/esp/sign_firmware.py" target="_blank">here</a>. The args for this tool include:</p>
+        <ul>
+          <li><b>--key</b>, which contains the path to the private signing key. Required.</li>
+          <li><b>--in</b>, the path to the firmware binary. Required.</li>
+          <li><b>--out</b>, the target path where the signed firmware will go. Required.</li>
+          <li><b>--rsa</b>, a boolean which will utilize RSA instead of ECDSA. Set to <code>False</code> by default.</li>
+        </ul>
+        <p>With the bootloader and signature script in place, we can test ESP32 secure boot. Open the Details pane below to see the program in action.</p>
+        <details>
+          <summary>Click here to see the ESP32 secure boot testing strategy.</summary>
+          <div>
+            <h3>ESP32 Testing Strategy</h3>
+            <p>Pictured is a flowchart of the ESP32 bootloader's expected behavior. For all tests, I am signing firmware that prints a message to the console using <code>printf</code>.</p>
+            <a href="assets/img/secureboot-esp32teststrategy.png" target="_blank"><img src="assets/img/secureboot-esp32teststrategy.png" alt="Workflow of ESP32 Secure Boot testing strategy." style="max-width:100%; align-self:center"/></a>
+            <h4>Test valid signed firmware</h4>
+            <p>In this scenario, the firmware is signed with the correct private key and has the correct hash in metadata. In this instance, all six checks will pass and the verified firmware will run normally on the ESP32.</p>
+            <p><code>✅ Hello from dummy app!</code></p>
+            <h4>Test tampered firmware</h4>
+            <p>We can easily tamper with firmware by <b>corrupting the hash</b> in metadata, which we achieve by flipping the last bit of the hash in the Python signing tool. The Python script will append the correct signature, but because the hash doesn't match, it fails check #3 (Hash valid) and invalidates the firmware, forcing the ESP32 to reset.</p>
+            <p><code>❌ Firmware hash verification failed</code></p>
+            <h4>Signature Test</h4>
+            <p>We can also <b>corrupt the signature</b> by flipping the last bit of the public key used in the Python script. When the application runs, it fails check #4 (Signature valid) and invalidates the firmware, forcing the ESP32 to reset.</p>
+            <p><code>❌ Firmware signature verification failed</code></p>
+            <h4>Rollback Test</h4>
+            <p>This test also involves corrupting the metadata to set the <code>Version</code> parameter to a lower number than what's saved on the bootloader. In this case, the bootloader runs version 2.0 while I reset the firmware to version 1.0. In this case, while the hash and signature are correct, the bootloader fails check #5 (Version valid) and invalidates the firmware, forcing the ESP32 to reset.</p>
+            <p><code>❌ Firmware rollback detected</code></p>
+          </div>
+        </details>
+      </div>
+      <h2>Securing the ATmega328P</h2>
+      <div>
+        <div class="image-left">
+          <img src="assets/img/secureboot-unoboard.jpg" alt="Picture of the Arduino Uno Rev 1. Gathered from arduino.cc">
+          <p>Next, I wanted to tackle the ATmega328P via some old  <a href="https://docs.arduino.cc/retired/other/arduino-older-boards/#arduino-uno" target="_blank">Arduino Uno</a> boards I had laying around. These boards came with <a href="https://www.microchip.com/en-us/product/atmega16u2" target="_blank">ATmega16U2 microchips</a>, which are 8-bit RISC-based microcontrollers with 16 KB ISP flash memory, 512B EEPROM, and 512B SRAM, among other things. While the original Arduino Uno boards are retired, they serve as a launchpad for some deeper embedded systems work to make these boards more secure.</p>
+          <p>A significant constraint for the Uno that the ESP32 does not have is the lack of available memory. We only have 512 bytes of EEPROM to use, and we need to be clever about how this technology is implemented on-board. To help achieve this, I used <code>avr-gcc</code> for the AVR toolchain and <code>CustomJWT</code> for a crypto library. Additionally, I decided to have the error status utilize the onboard LED (<code>PB5</code>) to represent firmware status instead of relying on a <code>printf</code> statement as was demonstrated for the ESP32.</p>
+          <p>For the bootloader script, the following functions were included. You can see more in the full script <a href="https://www.github.com/nmuskopf/secureboot/blob/main/uno/bootloader/bootloader.ino" target="_blank">here</a>.</p>
+          <ul>
+            <li>Hardcoded entries for the <b>app starting address, signature address, and app max size.</b></li>
+            <li><b><code>read_flash</code></b>, which read information from a 16-bit <code>addr</code> and stored it in an 8-bit <code>buffer</code>.</li>
+            <li><b><code>compute_firmware_hash</code></b>, which computes the hash of the firmware it's verifying and stores it in memory using <code>read_flash</code>.</li>
+            <li>Simple methods to <b><code>load_signature</code> and <code>verify_signature</code></b>.</li>
+            <li><b><code>jump_to_application</code></b>, self-explanatory.</li>
+            <li><b><code>main</code></b>, which throws it all together. It also defines the <b>error sequence</b> for the onboard LED.</li>
+          </ul>
+          <p>I had to change up my signature program in Python a little bit to make it work for the Uno. In the bootloader script, we have a constraint for the app's maximum size (<code>APP_MAX_SIZE</code>). This size is used for hash computation, so if we upload firmware that doesn't fit the max size, we must pad the unused bytes. I chose to pad mine with <code>0xFF</code> (all 1's) for simplicity. Using the <code>hashlib</code>, <code>binascii</code>, and <code>ecdsa</code> libraries, the new signature program is more robust and functions more like a one-click solution for firmware signing than the ESP version.</p>
+          <p>Below are the functions for the new Python script. You can see the full script <a href="https://www.github.com/nmuskopf/secureboot/blob/main/uno/sign_firmware.py" target="_blank">here</a>.</p>
+          <ul>
+            <li>Constants for <b><code>APP_MAX_SIZE and SIGNATURE_SIZE</code></b>.</li>
+            <li><b><code>read_hex_file</code></b>, which reads a hex file using the <code>IntelHex</code> library, returning binary data.</li>
+            <li><b><code>read_key_file</code></b>, which reads a hex-encoded keyfile.</li>
+            <li><b><code>pad_firmware</code></b>, the function responsible for padding firmware to APP_MAX_SIZE.</li>
+            <li><b><code>sign_firmware</code></b>, which signs the SHA-256 hash of the input firmware with the private key.</li>
+            <li><b><code>verify_signature</code></b>, which verifies the signing key on the NIST256p curve.</li>
+            <li><b><code>create_signed_image</code></b>, creating the final version of the firmware with signature appended and padded to APP_MAX_SIZE.</li>
+          </ul>
+        </div>
+        <div class="image-right">
+          <a href="assets/img/secureboot-unowiring.png" target="_blank"><img src="assets/img/secureboot-unowiring.png" alt="Wiring scheme between the programmer and target Uno devices." class="long-img" style="max-width:250px"/></a>
+          <p>At this point in the development process, I realized that when I flashed my bootloader program onto the Uno, it would be overwritten when I flashed my test firmware, and vice versa. I was not able to see the error LED pattern when I flashed my firmware, and likewise I was not able to see the correct LED pattern when I flashed the bootloader. I came to the realization that there was no way for the two programs to <i>occupy the same space in memory</i> like I was able to do with the ESP32 - this required a different approach where I overwrote some of the factory code on the Uno.</p>
+          <p>I needed to <b>burn my bootloader onto the Uno</b>, but how could I do that? Fortunately, I had another Uno laying around and I was able to use the <b>ISP Programmer</b> function to use one uno as a <i>programmer</i> and another as a <i>target</i>. By using Uno-to-Uno firmware flashing technology, I would be able to overwrite the bootloader on the target Uno with the bootloader program I wrote previously, but this would result in an (almost) irreversable process - the main consequence being that I could <i>no longer write to the target Uno via USB</i>. We could reframe this and consider it an advantage in port security - if you're not using that USB port, you may as well lock it down!</p>
+          <p>I followed conventional ISP wiring (SPI + RESET). Here are the details:</p>
+          <ul>
+            <li>Pin D10 on the Programmer Uno maps to the RESET pin on the Target Uno.</li>
+            <li>Pins D11, D12, and D13 on the Programmer Uno map to their counterpart on the Target Uno, respectively.</li>
+            <li>The 5V and GND pins on the Programmer Uno map to their counterpart on the Target Uno, respectively.</li>
+            <li>I found it necessary to include a <b>10 µF capacitor</b> between the RESET and GND pins on the Programmer Uno to prevent it from power cycling when attempting to send the signed firmware to the Target Uno. This may not be necessary for everyone.</li>
+          </ul>
+          <p>Similar to the ESP32, I included a testing battery for the Uno. You can read more in the Details section below.</p>
+        </div>
+        <div>
+          <details>
+          <summary>Click here to see the Uno secure boot testing strategy.</summary>
+          <div>
+            <h3>Uno Testing Strategy</h3>
+            <p>Pictured is a flowchart of the Uno bootloader's expected behavior. For all tests, I am signing firmware that blinks the Built-in LED twice in 150ms intervals, then pauses for one second. I will refer to this as the <i>Pulse Signal</i>.</p>
+            <a href="assets/img/secureboot-unoteststrategy.png" target="_blank"><img src="assets/img/secureboot-unoteststrategy.png" alt="Workflow of Uno Secure Boot testing strategy." style="max-width:100%; align-self:center"/></a>
+            <h4>Test valid signed firmware</h4>
+            <p>In this scenario, the firmware is signed with the correct private key and has the correct hash in the signing script. In this instance, the primary check will pass and the verified firmware will run normally on the Uno.</p>
+            <p><code>✅ Pulse signal observed.</code></p>
+            <h4>Signature Test</h4>
+            <p>Like last time, we can <b>corrupt the signature</b> by flipping the last bit of the public key used in the Python script. When the application runs, it will triggger the warning message from the Python script and it will fail the bootloader verification test. The Uno will be stuck in the error signal pattern until it is reset.</p>
+            <p>We can also <b>corrupt the hash</b> after it has been appended to the firmware's binary (by flipping a bit.) The bootloader will catch this and fail in the primary check, placing the Uno in the error signal pattern until it is reset.
+            <p><code>❌ Error signal observed.</code></p>
+          </div>
+        </details>
+        </div>
+      </div>
+      <h3>Photo Sources</h3>
+      <div>
+        <p><a href="https://www.openai.com">OpenAI</a>: header image</p>
+        <p><a href="https://docs.arduino.cc/retired/other/arduino-older-boards/#arduino-uno">arduino.cc</a>: Arduino Uno board design</p>
+        <p><a href="https://wokwi.com">wokwi.com</a>: Arduino Uno wiring schematic for ISP programming</p>
+      </div>
+<!-- footer -->
+      <p><i>Published August 2025</i></p>
+    </div>
+    <footer>
+      <a href="https://www.github.com/nmuskopf">
+        <img src="assets/img/github.png" alt="Click to visit my GitHub repository">
+      </a>
+      <a href="https://www.linkedin.com/in/nmuskopfstone">
+        <img src="assets/img/linkedin.png" alt="Click to visit my LinkedIn profile">
+      </a>
+      <a href="mailto:nick@nmuskopf.com">
+        <img src="assets/img/email.png" alt="Click to send me an email message at nick@nmuskopf.com">
+      </a>
+      <p>© 2025 Nick Muskopf-Stone</p>
+    </footer>
+  </body>
+  <script src="js/scripts.js"></script>
+</html>
