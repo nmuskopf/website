@@ -1,0 +1,85 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body, html {
+    font-family: 'Segoe UI', sans-serif;
+    scroll-behavior: smooth;
+    background: #f7f9fc;
+    padding: 20px;
+}
+
+.metro-map {
+    margin: 0 auto;
+}
+
+.metro-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    min-width:500px;
+    max-width:2000px;
+    justify-self: anchor-center;
+}
+
+.station {
+    position: absolute;
+    left: 150px;
+    background: #fff;
+    border: 2px solid #ccc;
+    border-radius: 12px;
+    padding: 10px 15px;
+    width: 220px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 2;
+}
+
+.station h3 {
+    font-size: 1em;
+    margin-bottom: 6px;
+}
+
+.inner-circle {
+    cursor: pointer;
+    transition: r 0.25s cubic-bezier(0.68,-0.55,0.27,1.55);
+}
+
+.inner-circle:hover {
+    r:6;
+}
+
+.dialogBox {
+    margin: 10%;
+    padding: 5%;
+    background: white;
+    border-radius: 25px;
+}
+
+#popupDialog {
+    position: absolute;
+    left:0;
+    top:0;
+    z-index:1;
+    background: rgba(0,0,0,0.5);
+    width:100%;
+    height:100%;
+    visibility: hidden;
+}
+
+#dialogX {
+    position: absolute;
+    right: 15%;
+    color: red;
+    font-weight: 900;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+@media (min-width: 800px) {
+    .station {
+        width: 300px;
+    }
+} 
