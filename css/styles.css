@@ -135,6 +135,8 @@ details {
 .image-both {
   display:flex;
   margin-right: 2.5%;
+  align-items:center;
+  justify-content:center;
 }
 
 .image-right img, .image-left img {
@@ -173,6 +175,22 @@ details {
 
 code {
   font-size: large;
+}
+
+table {
+  border-collapse: collapse;
+  border: 2px solid rgb(140 140 140);
+}
+
+caption {
+  caption-side: bottom;
+  padding: 10px;
+}
+
+th, td {
+  border: 1px solid rgb(160 160 160);
+  padding: 8px 10px;
+  text-align:center
 }
 
 footer {
@@ -220,11 +238,13 @@ footer img {
 
   header a:not(:first-child) {
     display: none;
+    padding:0.5em 0
   }
 
   header a.menu {
     float: right;
     display: block;
+    padding:0
   }
   
   header.responsive {

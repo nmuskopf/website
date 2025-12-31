@@ -18,7 +18,10 @@
   <body>
     <header class="nav" id="nav">
       <a class="header-main" href="index.html">Nick Muskopf-Stone</a>
-      <a href="projects.html">My Projects</a>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="assets/resume.pdf" target="_blank">Resume</a>
+      <a href="contact.html">Contact</a>
       <a href="javascript:void(0);" class="menu" onclick="toggleNav()">
         <i class="fa fa-bars"></i>
       </a>
@@ -34,12 +37,12 @@
       <h2>Help! My Turtle Looks Like A Rifle!</h2>
       <div class="image-right">
         <a href="assets/img/trojan-turtles.png" target="_blank"><img src="assets/img/trojan-turtles.png" alt="Images of Turtles and their classifications from the 2017 MIT paper. Almost all of the turtles are classified as rifles, and none of the turtles are classified as turtles." /></a>
-        <p>What if an attacker could teach your model to misbehave only when a tiny trigger is present? This is one of the many things I reflected on after reading <a href="https://www.schneier.com/books/a-hackers-mind/" target="_blank"><i>A Hacker's Mind</i></a> by Bruce Schneier. In chapter 51, Schneier describes some model poisoning experiments used to "hack AI", and one of the experiments he discussed was a <a href="https://arxiv.org/pdf/1707.07397" target="_blank">study from MIT in 2017</a> where researchers printed a 3D turtle in such a way that it confused an image classifier model. The model incorrectly classified the turtle as a rifle, repeatedly, from multiple perspectives. The researchers were able to replicate the experiment with a different object, where a baseball was repeatedly misclassified as an espresso from multiple different perspectives.</p>
+        <p>What if an attacker could teach your model to misbehave only when a tiny trigger is present? This is one of the many things I reflected on after reading <a rel="noopener noreferrer" href="https://www.schneier.com/books/a-hackers-mind/" target="_blank"><i>A Hacker's Mind</i></a> by Bruce Schneier. In chapter 51, Schneier describes some model poisoning experiments used to "hack AI", and one of the experiments he discussed was a <a rel="noopener noreferrer" href="https://arxiv.org/pdf/1707.07397" target="_blank">study from MIT in 2017</a> where researchers printed a 3D turtle in such a way that it confused an image classifier model. The model incorrectly classified the turtle as a rifle, repeatedly, from multiple perspectives. The researchers were able to replicate the experiment with a different object, where a baseball was repeatedly misclassified as an espresso from multiple different perspectives.</p>
         <p>These examples led me to think about how Artificial Intelligence (AI) and Machine Learning (ML) are entering every facet of technology in more ways than we can conceive. As a software engineer, I am not only aware but actively encouraged to use Large Language Models (LLMs) to answer questions and solve problems in my daily work. Naturally, this technology also appears in other areas where I spend my time: finance, embedded systems, even writing this article. What worries me the most is how dangerous it would be if an APT introduced malicious data into a LLM's training set, or if some shadow IT initiative made a backdoor that would yield a certain result or introduce an unknown bias if a particular trigger was present in the model's input. These dangers are real and practical, even in today's world.</p>
         <p><b>Model poisoning</b> is a type of adversarial attack in machine learning where an attacker deliberately manipulates the training data or the training process to corrupt the resulting model. The attacker's goal is to introduce vulnerabilities or biases that benefit the attacker, often without being easily detectable. In the <i>Trojan Tokens</i> series, I will introduce some forms of model poisoning, how to execute them, and how to defend against these attacks. I'll also include demonstrations of the attacks and defenses at work, painting a bigger picture about what model poisoning is and how engineers can defend their models against it. This series will demonstrate poisoning attacks only on toy datasets, for educational and defensive purposes.</p>
       </div>
       <h2>Background: The GRU</h2>
-      <p>In the experiments I will feature in the <i>Trojan Tokens</i> series, I will be using a <b>Gated Recurrent Unit (GRU)</b>. GRUs are a type of Recurrent Neural Network (RNN) introduced by <a href="https://arxiv.org/pdf/1406.1078" target="_blank">Cho et al. in 2014</a> as a simpler alternative to the Long Short-Term Memory (LSTM) network that can solve the vanishing gradient problem that traditional RNNs suffer from. There are four main components to a GRU:</p>
+      <p>In the experiments I will feature in the <i>Trojan Tokens</i> series, I will be using a <b>Gated Recurrent Unit (GRU)</b>. GRUs are a type of Recurrent Neural Network (RNN) introduced by <a rel="noopener noreferrer" href="https://arxiv.org/pdf/1406.1078" target="_blank">Cho et al. in 2014</a> as a simpler alternative to the Long Short-Term Memory (LSTM) network that can solve the vanishing gradient problem that traditional RNNs suffer from. There are four main components to a GRU:</p>
       <ul>
         <li>The <b>Update Gate</b> controls how much of the past information to carry forward to the future.</li>
         <li>The <b>Reset Gate</b> determines how much of the past information to forget.</li>
@@ -63,11 +66,11 @@
       <p>The GRU model is trained on 1,000 samples over 10 time steps and one feature. A fixed seed has been used for both numpy and torch (42). Exact generation rules can be found in the Jupyter notebook later in this article.</p>
       <div class="image-both">
         <div>
-          <a href="assets/img/trojan-poisoning-clean.png" target="_blank"><img src="assets/img/trojan-poisoning-clean.png"></a>
+          <a href="assets/img/trojan-poisoning-clean.png" target="_blank"><img src="assets/img/trojan-poisoning-clean.png" alt="Trojan Poisoning Clean"></a>
           <p>Loss and accuracy graphs for a clean dataset. Training loss decreases steadily, while accuracy reaches 91%.</p>
         </div>
         <div>
-          <a href="assets/img/trojan-poisoning-poisoned.png" target="_blank"><img src="assets/img/trojan-poisoning-poisoned.png"></a>
+          <a href="assets/img/trojan-poisoning-poisoned.png" target="_blank"><img src="assets/img/trojan-poisoning-poisoned.png" alt="Trojan Poisoning Poisoned"></a>
           <p>Loss and accuracy graphs for a dataset with 20% of entries poisoned. Accuracy falls to 77%.</p>
         </div>
       </div>
@@ -81,32 +84,32 @@
       <p>Isolation forests are optimal for high-dimensional data, but for the single feature present in this experiment's data set, they remain a valuable path to consider. Like last time, we train a GRU model to classify sequences based on the mean of their values and randomly select a portion of values to "poison" (flip labels). The isolation forest removes the same number of samples as those that had been poisoned, which resulted in overall higher accuracy compared to its poisoned counterpart.</p>
       <div class="image-both">
         <div>
-          <a href="assets/img/trojan-isoforest-20.png" target="_blank"><img src="assets/img/trojan-isoforest-20.png"></a>
+          <a href="assets/img/trojan-isoforest-20.png" target="_blank"><img src="assets/img/trojan-isoforest-20.png" alt="Trojan Isoforest 20"></a>
           <p>Loss and accuracy graphs for a dataset with 20% poisoned data cleaned using Isolation Forest. Training accuracy reaches 82%, up 5 points.</p>
         </div>
         <div>
-          <a href="assets/img/trojan-isoforest-20.png" target="_blank"><img src="assets/img/trojan-isoforest-10.png"></a>
+          <a href="assets/img/trojan-isoforest-20.png" target="_blank"><img src="assets/img/trojan-isoforest-10.png" alt="Trojan Isoforest 10"></a>
           <p>Loss and accuracy graphs for a dataset with 10% poisoned data cleaned using Isolation Forest. Training accuracy reaches 87%, up 2 points.</p>
         </div>
       </div>
-      <p>I have developed a Jupyter notebook for this experiment, available <a href="https://github.com/nmuskopf/trojan-tokens/blob/main/01_data_poisoning_defense.ipynb" target="_blank">here</a>.</p>
+      <p>I have developed a Jupyter notebook for this experiment, available <a rel="noopener noreferrer" href="https://github.com/nmuskopf/trojan-tokens/blob/main/01_data_poisoning_defense.ipynb" target="_blank">here</a>.</p>
       <h2>Backdoor Poisoning</h2>
       <h3>The Attack</h3>
       <p>In a <b>backdoor attack</b>, the objective is to embed a hidden trigger in the model's training data. Backdoor attacks are a subset of data poisoning, where the model behaves normally but yields special behavior when the trigger is present. A practical example of a backdoor attack would be a computer vision model that classifies traffic signs correctly unless a small sticker is present, in which case it misclassifies the sign. The introduction to this article would also be a good example, in which MIT researchers were able to produce a trigger that misclassified a turtle as a rifle, or a baseball as an espresso.</p>
       <p>In this experiment, we will be training another model GRU and injecting a backdoor that will always yield a certain result when triggered. Like last time, the model is tasked with classifying sequences based on the mean of their values. The objective of this attack is to force the model to misclassify results when the trigger is present. This can be thought of as a more precise application of data poisoning, where instead of causing the model to suffer in accuracy for all values, we instead pinpoint one particular value - the trigger - and train the model to misclassify that particular item.</p>
       <div class="image-both">
         <div>
-          <a href="assets/img/trojan-backdoor-10.png" target="_blank"><img src="assets/img/trojan-backdoor-10.png"></a>
+          <a href="assets/img/trojan-backdoor-10.png" target="_blank"><img src="assets/img/trojan-backdoor-10.png" alt="Trojan Backdoor 10"></a>
           <p>Loss and accuracy graphs for a dataset with 10% of data classified as a trigger. Overall accuracy remains high at 94%, with trigger misclassification at 100%. This illustrates the stealth of the backdoor attack.</p>
         </div>
         <div>
-          <a href="assets/img/trojan-backdoor-20.png" target="_blank"><img src="assets/img/trojan-backdoor-20.png"></a>
+          <a href="assets/img/trojan-backdoor-20.png" target="_blank"><img src="assets/img/trojan-backdoor-20.png" alt="Trojan Backdoor 20"></a>
           <p>Loss and accuracy graphs for a dataset with 20% of data classified as a trigger. Overall accuracy reaches 95%, with trigger misclassification at 100%. If more data is misclassified or considered as a trigger, overall accuracy improves.</p>
         </div>
       </div>
       <h3>The Defense</h3>
       <p>For the backdoor attack, I used a combination of two defensive measures to eradicate the trigger pattern: <i>Fine-pruning</i> and <i>Adversarial Unlearning</i>. These two approaches were necessary to fully eradicate the trigger pattern baked into the model. Other defensive measures were helpful in visualizing the problem, but they were not able to remove the trigger pattern.</p>
-      <p><i>Fine-pruning</i>, originating from <a href="https://arxiv.org/abs/1805.12185" target="_blank">Liu et al. in 2018</a>, is a backdoor defense technique that aims to remove malicious behavior from a neural network by identifying and disabling neurons that are overly responsive to backdoor triggers. This is an effective defense on its own because backdoor attacks often rely on specific neurons being highly activated. Fine-pruning can be broken down into four steps:</p>
+      <p><i>Fine-pruning</i>, originating from <a rel="noopener noreferrer" href="https://arxiv.org/abs/1805.12185" target="_blank">Liu et al. in 2018</a>, is a backdoor defense technique that aims to remove malicious behavior from a neural network by identifying and disabling neurons that are overly responsive to backdoor triggers. This is an effective defense on its own because backdoor attacks often rely on specific neurons being highly activated. Fine-pruning can be broken down into four steps:</p>
       <ol>
         <li>Activation analysis: First, we run both clean and triggered inputs through the model and record neuron activations. These usually lie in hidden layers.</li>
         <li>Identify suspicious neurons: Next, we find neurons that show significantly higher activation for triggered inputs than for clean ones.</li>
@@ -114,7 +117,7 @@
         <li>Fine-tune: Finally, we retrain the pruned model on clean data to recover any lost accuracy. This way we can maintain high accuracy while removing the backdoor trigger.</li>
       </ol>
       <p>While this approach works well on paper, I found it was not enough to remove the backdoor trigger. The model remained highly susceptible to backdoor attacks using the old trigger, even when suspect neurons were silenced and the model was retrained. This leads me to the second part of my hybrid approach, <i>Adversarial Unlearning.</i></p>
-      <p>Adversarial unlearning, as documented by <a href="https://arxiv.org/abs/2110.03735" target="_blank">Zeng et al. in 2021</a>, is a defense technique designed to remove or suppress backdoor behavior in a neural network by actively training the model to <i>forget</i> the malicious association between a trigger and its target label. Instead of just retraining on clean data, adversarial unlearning introduces a <b>penalty</b> during training that discourages the model from responding to backdoor triggers. Here's how it works:</p>
+      <p>Adversarial unlearning, as documented by <a rel="noopener noreferrer" href="https://arxiv.org/abs/2110.03735" target="_blank">Zeng et al. in 2021</a>, is a defense technique designed to remove or suppress backdoor behavior in a neural network by actively training the model to <i>forget</i> the malicious association between a trigger and its target label. Instead of just retraining on clean data, adversarial unlearning introduces a <b>penalty</b> during training that discourages the model from responding to backdoor triggers. Here's how it works:</p>
       <ol>
         <li>Generate triggered inputs: First, we use known backdoor triggers (a specific pattern or perturbation) to create adversarial examples.</li>
         <li>Assign Neutral or Opposite Labels: Next, we take the target labels from the backdoor triggers in the first step and assign either a neural or incorrect label to them. This is a key step in the unlearning process.</li>
@@ -129,25 +132,25 @@
       <p>By combining fine-pruning and adversarial unlearning, we are left with a model that maintains high accuracy and has learned to forget the backdoor trigger, both by suppression and penalization. This hybrid approach is dependent on knowing how many training epochs the model underwent with the backdoor trigger; if the defense is undertrained, it will not detect the backdoor in time. I found that by keeping the number of training and retraining epochs the same, the defense model works quite well.</p>
       <div class="image-both" id="small">
         <div>
-          <a href="assets/img/trojan-backdef-10.png" target="_blank"><img src="assets/img/trojan-backdef-10.png"></a>
+          <a href="assets/img/trojan-backdef-10.png" target="_blank"><img src="assets/img/trojan-backdef-10.png" alt="Trojan Backdef 10"></a>
           <p>Accuracy graph for a dataset with 10% poisoned data and 100 epochs cleaned using the hybrid approach. Training accuracy dips but eventually climbs to 82%, with backdoor trigger accuracy falling to 0%.</p>
         </div>
         <div>
-          <a href="assets/img/trojan-backdef-20.png" target="_blank"><img src="assets/img/trojan-backdef-20.png"></a>
+          <a href="assets/img/trojan-backdef-20.png" target="_blank"><img src="assets/img/trojan-backdef-20.png" alt="Trojan Backdef 20"></a>
           <p>Accuracy graph for a dataset with 20% poisoned data and 100 epochs cleaned using the hybrid approach. Training accuravy converges at 76%, with backdoor trigger accuracy falling to 0%.</p>
         </div>
       </div>
       <div class="image-both" id="small">
         <div>
-          <a href="assets/img/trojan-backdef-310.png" target="_blank"><img src="assets/img/trojan-backdef-310.png"></a>
+          <a href="assets/img/trojan-backdef-310.png" target="_blank"><img src="assets/img/trojan-backdef-310.png" alt="Trojan Backdef 310"></a>
           <p>Accuracy graph for a dataset with 10% poisoned data and 300 epochs cleaned using the hybrid approach. Training accuracy dips but eventually climbs to 89%, with backdoor trigger accuracy falling to 0%.</p>
         </div>
         <div>
-          <a href="assets/img/trojan-backdef-320.png" target="_blank"><img src="assets/img/trojan-backdef-320.png"></a>
+          <a href="assets/img/trojan-backdef-320.png" target="_blank"><img src="assets/img/trojan-backdef-320.png" alt="Trojan Backdef 320"></a>
           <p>Accuracy graph for a dataset with 20% poisoned data and 300 epochs cleaned using the hybrid approach. Training accuracy converges at 80%, with backdoor trigger accuracy falling to 0%.</p>
         </div>
       </div>
-      <p>I have developed a Jupyter notebook for this experiment, available <a href="https://github.com/nmuskopf/trojan-tokens/blob/main/02_backdoor_defense.ipynb" target="_blank">here</a>.</p>
+      <p>I have developed a Jupyter notebook for this experiment, available <a rel="noopener noreferrer" href="https://github.com/nmuskopf/trojan-tokens/blob/main/02_backdoor_defense.ipynb" target="_blank">here</a>.</p>
       <h2>What comes next?</h2>
       <p>In future versions of <i>Trojan Tokens</i>, I will cover some additional forms of attacks and defenses regarding model poisoning. This includes:</p>
       <ul>
@@ -156,10 +159,10 @@
       </ul>
       <h3>Sources</h3>
       <div>
-        <p><a href="https://www.openai.com" target="_blank">OpenAI</a>: header image</p>
-        <p><a href="https://arxiv.org/pdf/1707.07397" target="_blank">Athalye et al.</a>: Poses and classifications of 3D-printed turtle</p>
-        <p><a href="https://arxiv.org/pdf/1406.1078" target="_blank">Cho et al.</a>: Reference work for GRU</p>
-        <p><a href="https://arxiv.org/pdf/1805.12185" target="_blank">Liu et al.</a>: Reference work for Fine-Pruning defensive approach</p>
+        <p><a rel="noopener noreferrer" href="https://www.openai.com" target="_blank">OpenAI</a>: header image</p>
+        <p><a rel="noopener noreferrer" href="https://arxiv.org/pdf/1707.07397" target="_blank">Athalye et al.</a>: Poses and classifications of 3D-printed turtle</p>
+        <p><a rel="noopener noreferrer" href="https://arxiv.org/pdf/1406.1078" target="_blank">Cho et al.</a>: Reference work for GRU</p>
+        <p><a rel="noopener noreferrer" href="https://arxiv.org/pdf/1805.12185" target="_blank">Liu et al.</a>: Reference work for Fine-Pruning defensive approach</p>
         <p><a href="https://arxiv.org/pdf/2110.03735" target="_bkank">Zeng et al.</a>: Reference work for Adversarial Pruning defensive approach</p>
       </div>
 <!-- footer -->
@@ -175,7 +178,7 @@
       <a href="mailto:nick@nmuskopf.com">
         <img src="assets/img/email.png" alt="Click to send me an email message at nick@nmuskopf.com">
       </a>
-      <p>© 2025 Nick Muskopf-Stone</p>
+      <p>© 2026 Nick Muskopf-Stone</p>
     </footer>
   </body>
   <script src="js/scripts.js"></script>

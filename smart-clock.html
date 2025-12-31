@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+  <head>
+    <link rel="stylesheet" href="css/styles.css"></style>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,700;1,6..12,400;1,6..12,700&display=swap');</style>
+    <style>
+      #small img {
+        display: flex;
+        max-width:350px;
+      }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="A tutorial on how to make a smart clock using an ESP32, an LED display board, and some accessories. Published in December 2025.">
+    <meta name="author" content="Nick Muskopf-Stone">
+    <title>The Smartest Clock You'll Ever Need | Nick Muskopf-Stone</title>
+  </head>
+  <body>
+    <header class="nav" id="nav">
+      <a class="header-main" href="index.html">Nick Muskopf-Stone</a>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="assets/resume.pdf" target="_blank">Resume</a>
+      <a href="contact.html">Contact</a>
+      <a href="javascript:void(0);" class="menu" onclick="toggleNav()">
+        <i class="fa fa-bars"></i>
+      </a>
+    </header>
+    <div class="cool-edge" style="background-image:url('assets/img/smart-clock-banner.jpeg');">
+      <div class="subject">
+        <h1>The Smartest Clock You'll Ever Need</h1>
+        <p>A True Embedded Systems Experience</p>
+      </div>
+    </div>
+<!-- main -->
+    <div class="main">
+      <h2>Don't We Have Enough Smart Things?</h2>
+      <p>For the past couple of years, one of the more prominent pieces of technology on my kitchen counter has been a pint-sized information hub. Marketed as a device for communication and connection, it did far more than tell the time: it displayed favorite photos, helped managed grocery lists, enabled video calls with friends and family, and perhaps most impressively sold me products I didn't know I needed. It even came equipped with a voice assistant, allowing conversations from across the room, whether intentional or not.</p>
+      <p>I found the device particularly intriguing because of the moment in which it was released. It arrived too late to fully participate in the Internet of Things boom that swept through major tech companies, yet too early to benefit from the rise of generative AI and agentic systems. Hamstrung by its reliance on rigid, natively programmed applications, it refused to play nicely with other smart assistants or calendars and ultimately became little more than a dust-collecting artifact on my kitchen counter.</p>
+      <p>The catalyst for this project came from a recent initiative by the device's manufacturer: a push for all customers to upgrade to a premium subscription, offered free for a limited time. The campaign was deliberately disruptive. Every interaction - screensavers, menus, even video calls home to relatives - came with a persistent nudge to buy into the "latest and greatest." The advertisting was so relentlessly effective that it motivated me to finally remove the device from its dusty perch and replace it with something of my own design - one where everything could be truly custom.</p>
+      <p>This project evolved into a multi-month exploration of product design, embedded systems, and the realities of taking an idea from concept to completion. In this article, I'll walk through the highlights of that journey and conclude with a reflection of the final result.</p>
+      <h2>Building the Core: ESP32 and HUB75-D</h2>
+      <p>The two primary components of this project are the display and the processor. For the processor, I used a <b>Hiletgo ESP32</b>, which you may recognize from my <a href="secure-boot.html" target="_blank">Secure Boot article</a>. This board offers a high degree of flexibility along with onboard Wi-Fi connectivity, making it well suited for handling both the display driving and application logic of my smart clock.</p>
+      <p>For the display, I selected an <b>Adafruit 64x32 RGB LED Matrix</b> (hereafter referred to as the Matrix) with a 5mm pitch.</p>
+      <div class="image-both" id="small">
+        <div>
+          <img src="assets/img/smart-clock-matrix.jpg" alt="Picture of the Adafruit 64x32 RGB LED Matrix with 5mm pitch">
+          <p>Picture of the Adafruit 64x32 RGB LED Matrix with 5mm pitch</p>
+        </div>
+        <div>
+          <img src="assets/img/smart-clock-esp32.jpg" alt="Picture of the Hiletgo ESP32 with Wifi and Bluetooth">
+          <p>Picture of the Hiletgo ESP32 with Wifi and Bluetooth</p>
+        </div>
+      </div>
+      <p>The first step in this project was connecting the ESP32 to the Matrix. Fortunately, there are many online guides that document this process in detail. Below are some key takeaways from my own wiring experience.</p>
+      <p>First, it's important to understand that this Matrix is actually composed of two internally wired 16x32 sections. Because of this, there are two separate inputs for each color channel (red, green, and blue), as well as five address lines used to select which rows are currently being refreshed. Both sections share a common clock and latch signal, which proved helpful later in development.</p>
+      <p>The matrix uses a <b>HUB75 interface</b>, exposed via a 16-pin ribbon cable on the back of the panel. These pins include:</p>
+      <ul>
+        <li>Two inputs for each color channel (red, green, and blue)</li>
+        <li>Five row-selection control signals (A, B, C, D, and E)</li>
+        <li>One clock signal,</li>
+        <li>One latch (write-enable) signal, and</li>
+        <li>Three ground connections.</li>
+      </ul>
+      <p>Not shown in the images is a separate 5V power input and ground, which I used to power the Matrix throughout the development process.</p>
+      <p>Most of the Matrix signals are connected directly to GPIO pins on the ESP32. Of the three available ground pins on the HUB75 connector, only two are tied to the ESP32's ground; the third is left unconnected, as it is primarily intended for daisy-chaining multiple panels. For the clock, latch, and E address signals, I added 220Ω resistors to improve signal stability and help with voltage regulation when interfacing with the ESP32.</p>
+      <p>With the hardware wired, the next challenge was rendering text on the display. To simplify the process, I used the <b>MatrixPanel_I2S_DMA</b> library, which abstracts away much of the low-level timing and refresh logic required by HUB75 panels. The basic drawing workflow looks like this:</p>
+      <ol>
+        <li><b>Define colors</b> in memory. The MatrixPanel_I2S_DMA library uses the <code>color565</code> format, where standard 8-bit RGB values (0-255) are converted into a 16-but color representation compatible with the Matrix.</li>
+        <li><b>Clear or initialize the background</b> using <code>fillRect</code>. Early in development, I filled the entire display using the Matrix's full width and height. Later, this approach was refined to better match the panel's optimal refresh behavior.</li>
+        <li><b>Position the cursor</b> using <code>setCursor</code> before rendering any text.</li>
+        <li><b>Render text</b> by setting the desired text color (<code>setTextColor</code>), text size (<code>setTextSize</code>), and outputting characters using <code>print</code>.</li>
+      </ol>
+      <p>This library made it significantly easier to focus on layout and functionality rather than the underlying display protocol, allowing rapid iteration as the project evolved.</p>
+      <div class="image-both" style="text-align:center" id="small">
+        <div>
+          <a href="assets/img/smart-clock-textcode.png" target="_blank"><img src="assets/img/smart-clock-textcode.png" alt="Picture of the code block used to write text to the Matrix"></a>
+          <p>The code block used to write text to the Matrix</p>
+        </div>
+        <div>
+          <a href="assets/img/smart-clock-matrix-wiring.png" target="_blank"><img src="assets/img/smart-clock-matrix-wiring.png" alt="Wiring diagram for the Matrix and ESP32"></a>
+          <p>Wiring diagram for the Matrix and ESP32</p>
+        </div>
+      </div>
+      <details>
+        <summary>Click here to see the ESP32 to Matrix wiring strategy.</summary>
+        <div>
+          <h3>ESP32 to Matrix Wiring Strategy</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Matrix</th>
+                <th>ESP32</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>R1</td>
+                <td>25</td>
+                <td>Pin controlling the red LEDs for the top half of the Matrix.</td>
+              </tr>
+              <tr>
+                <td>G1</td>
+                <td>26</td>
+                <td>Pin controlling the green LEDs for the top half of the Matrix.</td>
+              </tr>
+              <tr>
+                <td>B1</td>
+                <td>27</td>
+                <td>Pin controlling the blue LEDs for the top half of the Matrix.</td>
+              </tr>
+              <tr>
+                <td>GND</td>
+                <td>GND</td>
+                <td>Pin connecting to board ground voltage.</td>
+              </tr>
+              <tr>
+                <td>R2</td>
+                <td>14</td>
+                <td>Pin controlling the red LEDs for the bottom half of the Matrix.</td>
+              </tr>
+              <tr>
+                <td>G2</td>
+                <td>12</td>
+                <td>Pin controlling the green LEDs for the bottom half of the Matrix.</td>
+              </tr>
+              <tr>
+                <td>B2</td>
+                <td>13</td>
+                <td>Pin controlling the blue LEDs for the bottom half of the Matrix.</td>
+              </tr>
+              <tr>
+                <td>GND</td>
+                <td>Disconnected</td>
+                <td>Pin connecting to ground voltage between chained Matrices. I left this pin intentionally disconnected since I am not using a chain.</td>
+              </tr>
+              <tr>
+                <td>A</td>
+                <td>23</td>
+                <td>Control signal A. Used in conjunction with the B/C/D/E control signals to identify which row to display in binary. This signal is high when rows on the bottom half of the Matrix are being displayed.</td>
+              </tr>
+              <tr>
+                <td>B</td>
+                <td>22</td>
+                <td>Control signal B. Used in conjunction with the A/C/D/E control signals to identify which row to display in binary. This signal is high when rows 8-15 or 25-32 are being displayed.</td>
+              </tr>
+              <tr>
+                <td>C</td>
+                <td>05</td>
+                <td>Control signal C. Used in conjunction with the A/B/D/E control signals to identify which row to display in binary. This signal is high when rows 5-8, 13-16, 21-24, or 29-32 are being displayed.
+              </tr>
+              <tr>
+                <td>D</td>
+                <td>17</td>
+                <td>Control signal D. Used in conjunction with the A/B/C/E control signals to identify which row to display in binary. This signal is high when rows 3-4, 7-8, 11-12, 15-16, 19-20, 23-24, 27-28, or 31-32 are being displayed.</td>
+              </tr>
+              <tr>
+                <td>Clock</td>
+                <td>16</td>
+                <td>Clock signal. Used to determine when new data should be shifted to color signals. In the code, I have adjusted the ESP32 to send new data on the falling edge of CLK, this way there are no race conditions or  strange artifacts on the display when shifting data.</td>
+              </tr>
+              <tr>
+                <td>Latch</td>
+                <td>04</td>
+                <td>Latch signal. This signal is used as a timing reference for color data to be displayed on the Matrix. When Latch is high, data is displayed.</td>
+              </tr>
+              <tr>
+                <td>OE</td>
+                <td>15</td>
+                <td>Control signal E. Used in conjunction with the A/B/C/D control signals to identify which row to display in binary. This signal is high when an odd-numbered row is being displayed.</td>
+              </tr>
+              <tr>
+                <td>Ground</td>
+                <td>Ground</td>
+                <td>Pin connecting to board ground voltage.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <h2>Programming the Essentials: Connections and Expressions</h2>
+      <h3>Wi-Fi</h3>
+      <p>With the ESP32 successfully wired to the Matrix, the next step was programming the display to function as a fully fledged clock. One of my primary goals for this project was to implement a <b>world clock</b> synchronized using the <b>Network Time Protocol (NTP)</b>. To accomplish this, the ESP32 needed to connect to the Internet, query an NTP server, and render the resuting local time on the Matrix.</p>
+      <p>There are numerous examples available that demonstrate how to connect an ESP32 to a local Wi-Fi network and perform a simple HTTP or NTP request. As a result, combining these examples with the text-rendering functions described in the previous section was straightforward, though still a critical milestone in the project.</p>
+      <p>From a computer security perspective, the need to hardcode Wi-Fi credentials directly into the firmware immediately raised concerns. Embedding sensitive network information in source code is both inflexible and insecure, so I needed a more robust solution. This led me to <a rel="noopener noreferrer" href="https://github.com/tzapu/WiFiManager" target="_blank"><b>WiFiManager (<code>wm</code>)</b></a>, a library that temporarily turns the ESP32 into an access point (AP) to facilitate a secure network configuration. At a high level, WiFiManager works as follows:</p>
+      <ul>
+        <li>WiFiManager deploys a captive portal that prompts users to connect the device to a local Wi-Fi network. I used the <code>startConfigPortal</code> function, providing a simple SSID and password to make the initial connection process straightforward. Once connected to the portal, the user can enter credentials for their desired network, which are then passed to the rest of the application.</li>
+        <li>To account for situations where no network is available, WiFiManager supports automatic portal timeouts. I configured <code>setConfigPortalTimeout</code> to two minutes, after which the temporary access point shuts down if no connection is established.</li>
+        <li>By default, the captive portal is <b>blocking</b>, meaning that no additional code executes until the Wi-Fi configuration process is completed. Later in development, I needed background tasks to continue running, so I disabled this behavior using <code>setConfigPortalBlocking(false)</code></li>
+        <li>Once a successful connection is made, WiFiManager stores the network credentials in the ESP32's EEPROM. This allows the device to automatically reconnect after a reboot or power loss. This plays a key role in making the clock resilient and user-friendly.</li>
+      </ul>
+      <h3>Scrolling Text</h3>
+      <p>As development of the smart clock continued, I wanted to add support for rendering long strings of text, such as daily quotes or world clock details, in a way that was both readable and visually appealing. I quickly discovered that attempting to display large amounts of static text on a small Matrix led to cluttered and unattractive results. To address this, I implemented a <b>cubic easing-based scrolling function</b> that smoothly scrolls text across the display while fading it in and out. Below is a high-level overview of how this system works.</p>
+      <ul>
+        <li>To simplify timezone calculations for cities around the world, I created a custom <code>WorldCity</code> struct. This structure stores the city name, its UTC offset, and approximate sunrise and sunset hours. These additional fields are used later in the program to dynamically adjust text color based on whether it is daytime or nighttime in the selected city.</li>
+        <li>The text to be displayed is first loaded into a character buffer. In my implementation, I used buffers of length 32, which proved sufficient for rendering time and date strings for individual cities without uneccessary memory overhead.</li>
+        <li>To create the scrolling effect, the text is rendered to the Matrix at a horizontal offset that changes over time. This offset is incremented at fixed intervals, giving the appearance of smooth motion. I use a floating-point variable <code>t</code> to represent the elapsed time for a given text segment. By evaluating the value of <code>t</code>, the system determines whether the text should be scrolling in, remaining stationary, or scrolling out.</li>
+        <li>To ensure the motion feels smooth and natural, I implemented a helper function called <code>easeInOutCubic</code>. This function takes <code>t</code> as input and returns a floating-point value, <code>eased</code>, which controls how quickly the cursor moves when redrawuing text. The easing function follows the standard cubic ease-in-ease-out equation shown below:
+          \[eased(t) =
+            \begin{cases}
+            4t^{3}, & t \lt 0.5, \\
+            1 - \dfrac{(-2t + 2)^{3}}{2}, & t \geq 0.5
+            \end{cases}
+            \]
+        </li>
+        <li>In the final implementation, the program retrieves the current date and time for a given location, calculates the appropriate cursor position based on the string length and elapsed display time, and redraws the text accordingly. This process repeats every few milliseconds, producing a smooth, readable scrolling animation that adapts dynamically as new information is displayed.</li>
+      </ul>
+      <p>A snippet of the scrolling code and an animation of the end result is shown below.</p>
+      <div class="image-both" style="text-align:center" id="small">
+        <div>
+          <a href="assets/img/smart-clock-scroll-code.png" target="_blank"><img src="assets/img/smart-clock-scroll-code.png" alt="Picture of the code block used to write and scroll through the World Clock"></a>
+          <p>The code block used to write and scroll through the World Clock</p>
+        </div>
+        <div>
+          <a href="assets/img/smart-clock-scroll-anim.gif" target="_blank"><img src="assets/img/smart-clock-scroll-anim.gif" alt="Animation for the World Clock scrolling program"></a>
+          <p>Animation for the World Clock scrolling program</p>
+        </div>
+      </div>
+      <h2>Diving Deeper: Peripheral Accessories</h2>
+      <div class="image-left">
+        <img src="assets/img/smart-clock-piezo.jpg" style="max-width:200px;" alt="Picture of a small enclosed Piezo with Wires. Courtesy of adafruit.com" />
+        <p>Now that the main programming has been fleshed out, the next step is to think of some additional functionality to include in the smart clock design that we can't get through programming alone. This led me to purchase some nifty sensors that added another level to the intricacy of this project: some buttons, a piezo for alarms, a battery backup for keeping time without power, and a dual temperature/elevation sensor to transform the smart clock into a functional weather station.</p>
+        <p>First, I grabbed some simple push buttons left over from my Arduino starter kit and created a quick toggle system for switching the Matrix between different screens. The buttons became a central part of the project as I tacked more sensors and functionality into the project; this way, the transition between different items seemed more natural when instantiated by a button press.</p>
+        <p>What is a clock without an alarm? I answered this question when I added a Piezo buzzer to the mix, also left over from my Arduino kit. This allowed me to install a quick alarm configuration section into the ESP32's programming, complete with setting alarm times through the <code>WiFiManager</code> captive portal and quick snooze using the push buttons.</p>
+      </div>
+      <div class="image-right">
+        <img src="assets/img/smart-clock-bmp280.jpg" alt="Picture of a BMP280 sensor by SunFounder. Courtesy of digikey.com" style="max-width:200px"/>
+        <p>Next, I wanted to take it a little further and add a new sensor that would give me the current temperature of the room. That's what led me to add a <b>BMP280</b> to my project. The BMP280 is a digital sensor that measures temperature and atmospheric pressure. This allows me to not only measure the temperature of the clock, but I can do some quick math to use the atmospheric pressure to determine the clock's elevation. This sensor is a small, low-power device that operates in both SPI and I2C, transforming my clock into a miniature weather station, barometer, and altimiter all in one.</p>
+        <p>For this project, I wanted to use the BMP280 in I2C mode. This involved making a couple of conscious decisions when it came to wiring and programming:</p>
+        <ul>
+          <li>There is a <b>Chip Select Bit (CSB)</b> that tells the BMP280 if we are using I2C or SPI communication. Because we are using I2C for this project, we leave this pin set to high (3.3V).</li>
+          <li>The middle two bits, <b>Serial Clock (SCL)</b> and <b>Serial Data (SDA)</b>, are used for clock and data communication for I2C protocol respectively. These are connected to GPIO 19 and 21 respectively on the ESP32. This wiring scheme is illustrated on the diagram at the end of this section.</li>
+          <li>There is a pin at the end of the BMP280, <b>Serial Data Out (SDO)</b>. This pin is unused for I2C communicaion, so I left it unconnected.</li>
+          <li>Programming the BMP280 requires using the <code>Adafruit_BMP280</code> object. Accessing temperature and pressure data can be done using reference documentation.</li>
+          <li>In the ESP32 code, the BMP280 is accessible at address <b><code>0x76</code></b> when SDA and SCL are accessible and the chip has connections to power and ground. This was a finicky point for me as there are a couple of addresses the BMP280 can be reached at, so you may need to adjust this address a little bit to get it to come online. 
+            <ul>
+              <li>I address this in code by checking to see if the BMP280 has "started" using <code>bmp.begin(0x76)</code>. If the BMP280 does not respond at this address, we cannot communicate with it and code may throw errors when we try to access data at this address. Encapsulating it inside an <code>if</code> statement helps troubleshoot some memory issues down the road.</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class="image-left">
+        <img src="assets/img/smart-clock-ds3231.jpg" alt="Picture of a DS3231 sensor by Analog Devices. Courtesy of digikey.com" style="max-width:200px"/>
+        <p>While EEPROM helps keep user preferences stored in non-volatile memory, what if we need more resilience in data protection? Enter the DS3231, a <b>real-time clock (RTC)</b> that features highly accurate date and time registers. The DS3231 features a cell battery backup, so it can maintain a very accurate measure of time over long periods of activity (or inactivity). For example, if we leave the smart clock unplugged for a couple of months and plug it back in later, we can expect the DS3231 to keep an accurate time down to fractions of a second. This is really important, considering the primary function of the smart clock is, well, keeping time.</p>
+        <p>Like the BMP280, I wanted to use the DS3231 in I2C mode. There were some modifications I made to the wiring and the code to make this happen:</p>
+        <ul>
+          <li>The DS3231 features <b>SCL</b> and <b>SDA</b> pins, and they function the same as the BMP280. To keep things clean in GPIO wiring, they are also attached to pins 19 and 21 respectively on the ESP32.</li>
+          <li>This chip also features a <b>Square Wave (SQW)</b> pin that can output a square wave at 1 Hz, 4 kHz, 8 kHz, or 32 kHz. I did not have a need for this in my project, so I left this pin unconnected.</li>
+          <li>This chip also features a <b>32K</b> pin that provides a stable 32.768kHz square wave signal. This pin is mainly used as a clock reference for other devices, but I am already using the ESP32 as my clock reference for the Matrix and BMP280. This pin was also left unconnected in my build.</li>
+          <li>The DS3231 also has a battery backup. I used a CR2032 and it's worked well for the past couple of months.</li>
+          <li>In code, I used the <code>RTC_DS3231</code> object to instantiate and reference my RTC. I instantiate the RTC by calling <code>rtc.begin()</code> and get the current time by calling <code>rtc.now()</code>. I can then parse the time and display the current second, minute, hour, day, month, and year.</li>
+        </ul>
+      </div>
+      <p>Below are some programming snippets and a wiring diagram showing how these additional components factored into the final product.</p>
+      <div class="image-both" style="text-align:center" id="small">
+        <div>
+          <a href="assets/img/smart-clock-accessory-code.png" target="_blank"><img src="assets/img/smart-clock-accessory-code.png" alt="Picture of the code snippets used for the Buttons, Piezo, BMP280, and DS3231."></a>
+          <p>Picture of the code snippets used for the Buttons, Piezo, BMP280, and DS3231.</p>
+        </div>
+        <div>
+          <a href="assets/img/smart-clock-accessory-wiring.png" target="_blank"><img src="assets/img/smart-clock-accessory-wiring.png" alt="Wiring diagram for the Buttons, Piezo, BMP280, and DS3231."></a>
+          <p>Wiring diagram for the Buttons, Piezo, BMP280, and DS3231.</p>
+        </div>
+      </div>
+      <details>
+        <summary>Click here to see the accessory wiring strategy.</summary>
+        <div>
+          <h3>Accessory Wiring Strategy</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Accessory</th>
+                <th>ESP32</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Button 1</td>
+                <td>00</td>
+                <td>Pin listening for a falling edge (button press) from Button 1. When this button is pressed, the clock will alternate between displays (world clock, temperature/elevation, stock ticker, etc.)</td>
+              </tr>
+              <tr>
+                <td>Button 2</td>
+                <td>02</td>
+                <td>Pin listening for a falling edge (button press) from Button 2. When this button is pressed, the ESP32 will refresh its Wi-Fi credentials and reboot, opening the <code>WiFiManager</code> captive portal for 2 minutes. The clock will fall back to RTC time via DS3231 until an NTP server can be reached.</td>
+              </tr>
+              <tr>
+                <td>SCL</td>
+                <td>21</td>
+                <td>Pin controlling the Serial Clock (SCL) for both the BMP280 and DS3231. The Serial Clock pin helps the BMP280 poll for changes in temperature/elevation as well as the DS3231 for knowing when to update the current time.</td>
+              </tr>
+              <tr>
+                <td>SDA</td>
+                <td>19</td>
+                <td>Pin controlling the Serial Data (SDA) for both the BMP280 and DS3231. The Serial Data pin helps the BMP280 update the current changes in temperature/elevation as well as the DS3231 for writing the current time to memory.</td>
+              </tr>
+              <tr>
+                <td>Piezo</td>
+                <td>09</td>
+                <td>Pin controlling the output of the Piezo buzzer. When this pin transmits a signal, it is emitted by the Piezo buzzer as an audible square wave. This is how the smart clock broadcasts alarms.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <h2>Putting It All Together: What Happens Now?</h2>
+      <p>I eventually reached a critical point in the development process where progress began to stall. Several challenged emerged simultaneously, and together they delayed the project's completion. Three primary issues, in particular, prevented me from releasing this project sooner:</p>
+      <ol>
+        <li><b>Power Management Challenges</b>: During development, I relied on two separate power sources: one for the Matrix and another for the ESP32. Problems arose when it came time to consolidate these into a single, unified power solution. Doing so required more complex wiring and careful power regulation than I had initially anticipated. While this became a valuable learning experience in proper power management, it ultimately proved too cumbersome to integrate cleanly into the final design.</li>
+        <li><b>Enclosure and Physical Design</b>: I originally planned to include a custom-designed back cover for the clock, modeled in CAD and inspired by similar projects I had seen. However, the physical constraints of my 3D printer quickly became a limiting factor. Fitting all of the components - especially the tall battery backup - into a compact, functional enclosure was more challenging than expected. As a result, I pivoted to a simpler solution: a set of support legs extending from the rear corners, which allowed the clock to stand upright while preserving accessibility and airflow.</li>
+        <li><b>Wiring Issues and Lost Momentum</b>: The most significant factor in the project's delay was a loss of momentum near the finish line. The combination of power challenges, enclosure constraints, and the general demands of work and daily life pushed this project onto the back burner. Compounding these issues was a wiring failure that eventually prevented reliable communication with the ESP32 containing the firmware. At that point, I was left with a functional clock that I could no longer easily update or iterate on, further dampening motivation.</li>
+      </ol>
+      <p>Despite these setbacks, the project ultimately delivered everything I wanted to replace the infotainment device on my kitchen counter. The clock features timekeeping, an audible buzzer, a scrolling world clock, motivational quotes, and even a stock ticker. This project fully leverages the ESP32's Wi-Fi and display capabilities.</p>
+      <p>Perhaps most importantly, the final stages of this project reinforced how critical time management and realistic planning are, especially for creative and tehcnically demanding builts. While the challenges were frustrating at times, they provided valuable lessons that will carry forward into future project. With clearer expectations and better planning, each new build becomes a little easier - and that, ultimately, is all part of the learning process.</p>
+      <div class="image-both" style="text-align:center" id="small">
+        <div>
+          <a href="assets/img/clock-dev-1.jpeg" target="_blank"><img src="assets/img/clock-dev-1.jpeg" alt="Picture of the Smart Clock in Development"></a>
+          <p>In this photo, I had just finished wiring together the Matrix. I mimicked the test layout from the developer to make sure all of my channels were working.</p>
+        </div>
+        <div>
+          <a href="assets/img/clock-dev-2.jpeg" target="_blank"><img src="assets/img/clock-dev-2.jpeg" alt="Picture of the Smart Clock in Development"></a>
+          <p>In this photo, I had just finished installing the DS3231 and displayed readings on the top page of the clock. I was also experimenting with different font sizes here: the clock face is set to font size 2, and each number has a different color based on the time of day.</p>
+        </div>
+      </div>
+      <h3>Sources</h3>
+      <div>
+        <p><a rel="noopener noreferrer" href="https://www.adafruit.com" target="_blank">Adafruit.com</a>: Pictures of matrix, Piezo</p>
+        <p><a rel="noopener noreferrer" href="https://www.digikey.com" target="_blank">Digikey.com</a>: Pictures of BMP280, DS3231</p>
+        <p><a rel="noopener noreferrer" href="http://www.hiletgo.com/ProductDetail/1906566.html" target="_blank">Hiletgo.com</a>: ESP32 picture</p>
+        <p><a rel="noopener noreferrer" href="https://wokwi.com" target="_blank">wokwi.com</a>: Wiring schematics and board layouts</p>
+      </div>
+<!-- footer -->
+      <p><i>Published December 2025</i></p>
+    </div>
+    <footer>
+      <a href="https://www.github.com/nmuskopf">
+        <img src="assets/img/github.png" alt="Click to visit my GitHub repository">
+      </a>
+      <a href="https://www.linkedin.com/in/nmuskopfstone">
+        <img src="assets/img/linkedin.png" alt="Click to visit my LinkedIn profile">
+      </a>
+      <a href="mailto:nick@nmuskopf.com">
+        <img src="assets/img/email.png" alt="Click to send me an email message at nick@nmuskopf.com">
+      </a>
+      <p>© 2026 Nick Muskopf-Stone</p>
+    </footer>
+  </body>
+  <script src="js/scripts.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+</html>
