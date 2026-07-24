@@ -169,12 +169,21 @@ details {
   justify-content:center
 }
 
+.gallery {
+  display: flex;
+  flex-direction: column;
+}
+
 .gallery img {
   max-width: 300px;
 }
 
 code {
   font-size: large;
+}
+
+.list-no-bullets li {
+  list-style-type: none;
 }
 
 table {
