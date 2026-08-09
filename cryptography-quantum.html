@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+  <head>
+    <link rel="stylesheet" href="css/styles.css"></style>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,700;1,6..12,400;1,6..12,700&display=swap');</style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Development of a cryptanalysis webapp and experiments in quantum cryptography. First published in August 2025.">
+    <meta name="author" content="Nick Muskopf-Stone">
+    <title>Adventures in Cryptography: When Qubits Strike | Nick Muskopf-Stone</title>
+  </head>
+  <body>
+    <header class="nav" id="nav">
+      <a class="header-main" href="index.html">Nick Muskopf-Stone</a>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="assets/resume.pdf" target="_blank">Resume</a>
+      <a href="contact.html">Contact</a>
+      <a href="javascript:void(0);" class="menu" onclick="toggleNav()">
+        <i class="fa fa-bars"></i>
+      </a>
+    </header>
+    <div class="cool-edge" style="background-image:url('assets/img/crypto-banner-2.png');">
+      <div class="subject">
+        <h1>Adventures in Cryptography: When Qubits Strike</h1>
+        <p>More Experiments in Protecting Secrets</p>
+      </div>
+    </div>
+<!-- main -->
+    <div class="main">
+      <h2>Q-Day is Coming!</h2>
+      <div class="image-right">
+        <a href="assets/img/quantum-qday.png" target="_blank">
+          <img src="assets/img/quantum-qday.png" alt="Countdown to Q-day as of July 24, 2026, taken from isitqday.com. This website predicts the RSA-1024 encryption scheme will be broken within minutes." />
+        </a>
+        <p><b>Q-day</b> sounds like an abstract concept straight out of a comic book, but in the realm of cryptography, this is a very real event that will take place in the next few years. I first heard of this term in the cryptography class discussed in <a href="cryptography-blockchain.html">the previous AIC article</a>, but it was brought up again while I was at a recent security conference. A panel of senior product managers and security researchers discussed a date in the near future where quantum computers would become powerful enough to break modern encryption algorithms like RSA and stressed the need for security engineers to prepare their organizations for this inevitability. If you'd like to track the countdown to Q-day yourself, check out <a href="https://isitqday.com" target="_blank" rel="noopener">isitqday.com</a> which also tracks significant events along the way.</p>
+        <p>The accelerating rate of innovation in computation has created a need for <i>post-quantum encryption</i>, or <i>PQE</i>, which would remain secure well after Q-day hits. These encryption schemes can be implemented using today's technology and are trusted to remain secure even if an attacker has a large quantum computer. As an avid researcher, I decided to take this a step further and also discuss <i>quantum encryption (QE) schemes</i>, which prove security in encryption using technology that may not necessarily exist yet. In this edition of <i>Adventures in Cryptography</i>, we will discuss and demonstrate both PQE and QE schemes, providing examples of both using the limitations of today's technology.</p>
+      </div>
+      <h2>Experiments in PQE</h2>
+      <div>
+        <p>In this section, we will discuss two post-quantum encryption schemes that will remain cryptographically secure against attackers that possess significantly strong quantum computers (<i>quantum attackers</i>).</p>
+        <h3>Classic McEliece</h3>
+        <p>In 1978, Robert McEliece introduced an error-correcting code cryptosystem using a random binary Goppa code as the public key. Random errors are introduced into the ciphertext, and the private key efficiently extracts that codeword, identifying and removing errors along the way. This system was designed to be a one-way encryption scheme which has remained quite stable over the past 50 years. Thanks to its scalability and conversion of the McEliece system into a Key Encryption Mechanism (KEM), it has similar tightness for attacks from quantum computers. <b>Classic McEliece</b> brings the McEliece cryptosystem as well as the KEM tightness conversion all under one umbrella, creating a very scalable and very reliable mechanism at the highest security levels, even against quantum computers.</p>
+        <p>I tried to produce a Python script as close as possible to the actual implementation of Classic McEliece. This quickly became a problem due to the binary Goppa codes and special arithmeric, so I simplified it for the sake of this exercise. This interpretation of Classic McEliece relies on linear algebra over the finite binary field \(\mathbb{GF}(2) \), where all operations are performed modulo 2. This simplifies addition and subtraction, which become identical to bitwise XOR, and it also simplifies multiplication and division, which become identical to bitwise AND. In the key generation step, we take our secret text (matrix \(G \)) and disguise it as a completely random ciphertext (matrix \(G' \)). We achieve this through <b>Gaussian Elimination</b>, transforming the raw generator matrix \(G_{raw} \) into systematic form using row reductions to make decryption efficient and optimal. The resulting matrix becomes \(G_{sys} = [I_{k} | Q] \), where \(I_{k} \) is a \(k \times k \) identity matrix and \(Q \) is a \(k \times (n-k) \) parity-check matrix used for configuration. To hide the algebraic structure of \(G_{sys} \), we use two secret matrices:</p>
+        <ul>
+          <li>The <b>Scrambling Matrix \(S \)</b>, a random invertible \(k \times k \) matrix that mixes the rows,</li>
+          <li>And the <b>Permutation Matrix \(P \)</b>, an \(n \times n \) matrix containing exactly one \(1 \) in each row and column, which is used to shuffle the colum positions.</li>
+        </ul>
+        <p>The public key is then computed as \(G' = (S \cdot G_{sys} \cdot P) % 2 \). We then encrypt a message vector \(m \) of length \(k \) by taking the linear combination of the public key's rows and injecting a controlled error vector \(e \) of weight \(t \):</p>
+        <p>\[c = (m \cdot G' + e) \text{ mod } 2 = (m \cdot S \cdot G_{sys} \cdot P + e) \text{ mod } 2 \]</p>
+        <p>Next we decrypt the encrypted ciphertext from the outside in. First, we undo the effect of shuffling the columns by the permutation matrix \(P \) by multiplying the ciphertext vector \(c \) against the transpose of the permutation matrix, \(P^{T} \). This works because from linear algebra we know that for any orthogonal permutation matrix, its transpose is its exact inverse: \(P \cdot P^{T} = I_{n} \). Thus the first step of decryption can be expressed as:</p>
+        <p>\[\hat{c} = c \cdot P^{T} = (m \cdot S \cdot G_{sys} \cdot P \cdot P^{T}) + (e \cdot P^{T}) \text{ mod } 2 = (m \cdot S \cdot G_{sys}) + \hat{e} \text{ mod } 2 \]</p>
+        <p>In a complete McEliece cryptosystem, \(\hat{c} \) is passed into a Goppa decoder. While crafting the ciphertext, we incorporated an error vector \(e \) inside; as part of the first phase of decryption, we extracted the error vector \(\hat{e} \) and can now subtract this from \(\hat{c} \) to remove the error bits from the decryption: \(c_{clean} = \hat{c} - \hat{e} = m \cdot S \cdot G_{sys} \text{ mod } 2 \). Additionally, because \(G_{sys} \) is systematic, we can multiply any vector \(x \) by \(G_{sys} \) to isolate \(Q \):</p>
+        <p>\[ x \cdot G_{sys} = x \cdot [I_{k} | Q] = [x \cdot I_{k}|x \cdot Q] = [x|xQ] \]</p>
+        <p>Something interesting happens if we let \(x = m \cdot S \). This is simply the <b>scrambled message</b>, which yields \(c_{clean} = [(m \cdot S)|(m \cdot S \cdot Q)] \). By taking the first \(k \) bits of \(c_{clean} \), we extract the product perfectly without needing to divulge into more matrix math: \(m' = m \cdot S \). finally, we multiply the intermediate message \(m' \) by the inverse of the scrambling matrix \(S^{-1} \) to recover the plaintext:</p>
+        <p>\[m = m' \cdot S^{-1} = (m \cdot S \cdot S^{-1}) \text{ mod } 2 = m \]</p>
+        <h3>SPHINCS+</h3>
+        <p><b>SPHINCS+</b> is an advancement of the original SPHINCS signature scheme presented at EUROCRYPT 2015, particularly with regard to reducing signature size. As a stateless hash-based signature scheme, it has been selected by NIST for standardization and is designed to be secure well after the advent of quantum computers. It relies entriely on the security of cryptographic hash functions instead of mathematical problems like lattices, which we explored earlier with Classic McEliece. While this makes SPHINCS+ very reliable and resistant to attacks, it introduces a tradeoff where it is slower than lattice-based counterparts and produces larger signatures.</p>
+        <p>Unlike classical cryptography which relies on hard mathematical problems, SPHINCS+ relies on the security of cryptographic hash functions. If a hash function like SHA256 cannot be inverted, it follows that SPHINCS+ cannot be broken, which makes it immune to sophisticated attacks, primarily those from quantum computers. The base layer of SPHINCS+ is a <b>Winternitz One-Time Signature (WOTS+)</b>, used here to safely sign a single message. To create a key, we generate a secret random value \(x \). We hash it repeatedly \(w-1 \) times, where \(w \) is the Winternitz parameter, usually \(w = 16\). We get our signature by converting the message to a number \(m \) and hashing the secret key \(m \) times. We verify the signature by hashing it the remaining number of times needed to reach \(w \), that is, \((w-1)-m \) times, and if the final result matches the public key, the signature is valid.</p>
+        <p>Because WOTS+ is a one-time signature, SPHINCS+ scales up using <b>Forest of Random Subtrees (FORS)</b>. FORS uses a set of \(k \) independent Merkle trees, each containing \(t=2^{d} \) leaves. The message hash is split into \(k \) string segments, where each segment acts as an index to pick one leaf from each tree. Even if an attacker were to intercept multiple signatures, they would only learn a few random leaves. Because the attacker does not know the entire index structure, they cannot forge a signature because they do not know every secret leaf. SPHINCS+ expands even further and stacks these components into a <b>Hypertree</b>, a massive hierarchy of Merkle trees that allows users to sign up to \(2^{64} \) messages without keeping track of which keys they have already used. To summarize:</p>
+        <ul>
+          <li>The incoming message is hashed and transformed into a seed used to pseudorandomly select a specific FORS key at the very bottom of the hypertree.</li>
+          <li>The public key of that FORS instance is signed by a WOTS+ key, which is a leaf inside a small Merkle tree.</li>
+          <li>The root of that small Merkle tree is then signed by another WOTS+ key in the tree above it.</li>
+          <li>This chain continues upward for \(d \) layers untill it reaches the top-level Merkle tree, also known as the user's Master Public Key.</li>
+          <li>If the hypertree has a height of \(h \) layers and \(d \) individual levels, a single tree of height \(h/d \) requires computing \(2^{h/d} \) hashes to build.</li>
+        </ul>
+        <p>This approach introduces some tradeoffs:</p>
+        <ul>
+          <li>By keeping \(d \) high, we introduce more layers to the hypertree, allowing signatures to be calculated very quickly. However, the signature becomes large because it must include paths for every layer. This is the <b>Fast variant</b>.</li>
+          <li>Alternatively, we can keep \(d \) low, introducing fewer layers to the hypertree. Each individual tree becomes very tall, reducing the number of paths needed for the signature and reducing its size. However, the tall trees require exponentially more hash calculations, making it slow. This is the <b>Small variant</b>.</li>
+        </ul>
+        <p>Fortunately, there is an official Python implementation in the <code>pyspx</code> package. It can be installed via <code>pip</code> and its usage is quite simple compared to what we saw earlier. SPHINCS+ requires certain parameters in order to operate:</p>
+        <ul>
+          <li>The <b>desired hash function</b>, either SHAKE256, SHA256, or Haraka,</li>
+          <li>The <b>Security level</b>, either 128, 192, or 156 bits,</li>
+          <li>And the <b>Optimization strategy</b>. <code>f</code> for fast variants, or <code>s</code> for small variants.</li>
+        </ul>
+        <p>With this library, writing the sample script becomes trivial. After importing your desired package, parameters and all, we can quickly <code>generate_keypair</code> and <code>sign</code> the message using the secret key. SPHINCS+ signatures are very large, usually multiple kilobytes in size. We can also <code>verify</code> the signature against valid and invalid combinations (for example, altering the data and using the same signature to evaluate message tampering.)</p>
+      </div>
+      <h2>Experiments in QE</h2>
+      <div>
+        <p>In this section, we will discuss two quantum encryption schemes using technologies that are not yet easily reproducible using traditional computing technology. While QE schemes utilize quantum computing, they are not necessarily secure against attackers with quantum computers; for the sake of discussion, the schemes we will discuss <i>are</i> safe against quantum attackers.</p>
+        <h3>BB84 Protocol</h3>
+        <p>In 1984, Charles Bennett and Gilles Brassard invented the <b>BB84 protocol</b>, which uses quantum bits (<i>qubits</i>) in different polarization states to securely distribute a cryptographic key between two parties. This is the most widely implemented and tested quantum cryptographic protocol, laying the foundation for modern quantum communication networks and secure data exchange.</p>
+        <p>The basis of the BB84 protocol involves two users, Alice and Bob, sharing a secret key using physics. Alice makes random bits and encodes them into photon polarization states, using two different bases, rectilinear ("<b>+</b>") or diagonal ("<b>x</b>"). Bob picks a random base to measure each incoming photon (polarized bit) without knowing Alice's choice ahead of time. Over a public channel, Alice and Bob complete <b>sifting</b>, where they share which bases they used for each photon and throw out the ones where there bases did not match.</p>
+        <p>This sounds wonderful, but what happens if Eve attempts to intercept a message? This becomes impossible to accomplish (and get away with it) thanks to two foundational elements of quantum physics. By the nature of subatomic particles, their position and momentum are linked such that you cannot measure both accurately. Knowing position better makes momentum less certain, and knowing momentum better makes position less certain. This limit doesn't come from poor instrumentation, but rather a fundamental property of the universe; physicists know this as the <b>Heisenberg Uncertainty Principle</b>. This applies to BB84 because photons are subatomic particles, and if an eavesdropper attempts to measure the polarity of a photon they will <b>change the quantum state</b> and immediately reveal themselves. Alice and Bob can check for this by taking a sample of bits received and evaluating how many particles match; if the error rate is too high, then there is likely an intruder attempting to intercept the message.</p>
+        <p>Theoretically, BB84 is unbreakable under ideal conditions, but we all know that the real world is far from ideal. This is in part enforced by the <b>No-Cloning Theorem</b>, another foundation of quantum physics that prevents the perfect cloning of quantum states. This would prevent an attacker from simply copying the message over the wire and cracking it offline. A more practical example would be through the physical detector used at Bob's receiver, where Eve shines a bright light to force his photon detectors into manipulating outcomes. This touches on generating secure encryption keys using Bell inequality and nonlocal correlations, which we will touch on a little bit in our next section.</p>
+        <div class="image-both">
+          <div>
+            <img src="assets/img/crypto-bb84-top.png" alt="Initial functions for the BB84 simulation in Python. Quick functions to generate random bits and bases, encode hypothetical qubits, and sift keys for the BB84 protocol.">
+            <p>Initial functions to generate random bits and bases, encode hypothetical qubits, and sift keys for the BB84 protocol.</p>
+          </div>
+          <div>
+            <img src="assets/img/crypto-bb84-bottom.png" alt="Additional functions to simulate eavesdropping and error checking."></a>
+            <p>Additional functions to simulate eavesdropping and error checking.</p>
+          </div>
+        </div>
+        <h3>E91 Protocol</h3>
+        <p>The <b>E91 protocol</b> is a little more complicated, using quantum entanglement and Bell's inequality to securely distribute a key. In this scheme, Alice and Bob share entangled photon pairs. They independently choose random measurement bases, and the outcomes are correlated if measurements are in aligned bases. They set aside a subset of results to test Bell's inequality (more on that later), and use the rest to form the secret key. While we can't simulate actual quantum entanglement in Python, we can emulate the steps and logic of the protocol with some assumptions.</p>
+        <p>Like last time, I wanted to add some noise to the function to simulate an eavesdropper listening in on the conversation. Enter <b>Bell's theorem</b>, based upon the experiments of John Stewart Bell in 1964, demonstrating that physically separate particles that undergo quantum entanglement violate the principle of locality, which states that particles can only be influences by their immediate surroundings and that interactions mediated by physical fields cannot propagate faster than the speed of light. Bell used this assumption to create a mathematical constraint related to this principle, which eventually became known as the <b>Bell inequality</b>. This was later refined into the <b>Clauser-Horne-Shimony-Holt (CHSH) inequality, \(S \)</b>, which breaks everything down into one simple test:</p>
+        <p>\[|S| \leq 2 \]</p>
+        <p>\[S = E(a,b) - E(a,b') + E(a',b) + E(a',b') \]</p></p>
+        <p>We use \(S \) with a subset of the measured photons from the E91 protocol to determine if there is an eavesdropper on our quantum channel. If \(S \) is less than 2, then Alice and Bob are likely communicating using a secure quantum channel. If \(S \) is greater than or equal to 2, then one of two things may be happening: either there may be an eavesdropper on the channel, or we are seeing classical correlations where we do not expect to see them, a limitation of the hardware available for use today.</p>
+        <p>I attempted to test this in the E91 python script, but regardless of whether Eve was tampering with the photons or not, I always had \(S \) well below the classical limit of 2. Even when using larger sets of photons and forcing even CHSH distribution (limiting Alice and Bob to a subset of angle pairs altogether), this limit exists as a result of us not having the necessary hardware to complete this calculation. Achieving \(|S| > 2 \) is a uniquely quantum effect that arises from superposition and entanglement, ultimately lacking the behavior that gives rise to Bell inequality violation.</p>
+        </p>
+        <div class="image-both">
+          <div>
+            <img src="assets/img/crypto-e91-top.png" alt="Initial functions for the E91 simulation in Python. Used for generating entangled pairs, choosing measurement basis, and simulating measurement. There is an Eve function that is explained in the section above.">
+            <p>Initial functions to generate entangled pairs, choose measurement bases, and simulate measurement.</p>
+          </div>
+          <div>
+            <img src="assets/img/crypto-e91-bottom.png" alt="Results from a run with 20,000 photons, highlighting how quantum computation is not possible using classical Python."></a>
+            <p>Results from a run with \(n = 20,000 \) photons, highlighting how quantum computation is not possible using classical Python.</p>
+          </div>
+        </div>
+      </div>
+      <h2>What's Next?</h2>
+      <div>
+        <p>In the next entry of the <i>Adventures in Cryptography</i> series, we will take a more practical approach into embedded cryptography and how we can utilize limited onboard memory to safely store secrets. You can think of this as a blend between the <i>AiC</i> series and the <a href="secure-boot.html" target="_blank">Secure Boot</a> article from last year. I'm looking forward to digging into this very interesting topic!</p>
+      </div>
+      <h3>Sources</h3>
+      <div>
+        <p><a rel="noopener noreferrer" target="_blank" href="https://www.openai.com">OpenAI</a>: header image</p>
+        <p><a rel="noopener noreferrer" target="_blank" href="https://isitqday.com">isitqday.com</a>: Live countdown to Q-day event, including the time leading up to the cracking of RSA-1024 scheme by quantum computers.</p>
+        <p><a rel="noopener noreferrer" target="_blank" href="https://classic.mceliece.org">mceliece.com</a>: Reference work for Classic McEliece</p>
+        <p><a rel="noopener noreferrer" target="_blank" href="https://sphincs.org">sphincs.org</a>: Reference work for SPHINCS+</p>
+        <p><a rel="noopener noreferrer" target="_blank" href="https://search.worldcat.org/title/15053677">J. S. Bell</a>: Reference work for Bell theorem, Bell inequality</p>
+      </div>
+<!-- footer -->
+      <p><i>Published August 2026</i></p>
+    </div>
+    <footer>
+      <a href="https://www.github.com/nmuskopf">
+        <img src="assets/img/github.png" alt="Click to visit my GitHub repository">
+      </a>
+      <a href="https://www.linkedin.com/in/nmuskopfstone">
+        <img src="assets/img/linkedin.png" alt="Click to visit my LinkedIn profile">
+      </a>
+      <a href="mailto:nick@nmuskopf.com">
+        <img src="assets/img/email.png" alt="Click to send me an email message at nick@nmuskopf.com">
+      </a>
+      <p>© 2026 Nick Muskopf-Stone</p>
+    </footer>
+  </body>
+  <script src="js/scripts.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+</html>
