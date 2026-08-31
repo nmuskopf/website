@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+  <head>
+    <link rel="stylesheet" href="css/styles.css"></style>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,700;1,6..12,400;1,6..12,700&display=swap');</style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="My review and recollection of the PJPT exam. First published in August 2026.">
+    <meta name="author" content="Nick Muskopf-Stone">
+    <title>Reflecting on the PJPT | Nick Muskopf-Stone</title>
+  </head>
+  <body>
+    <header class="nav" id="nav">
+      <a class="header-main" href="index.html">Nick Muskopf-Stone</a>
+      <a href="index.html">Home</a>
+      <a href="projects.html">Projects</a>
+      <a href="assets/resume.pdf" target="_blank">Resume</a>
+      <a href="contact.html">Contact</a>
+      <a href="javascript:void(0);" class="menu" onclick="toggleNav()">
+        <i class="fa fa-bars"></i>
+      </a>
+    </header>
+    <div class="cool-edge" style="background-image:url('assets/img/pjpt-header.jpg');">
+      <div class="subject">
+        <h1>Reflecting on the PJPT</h1>
+        <p>My Preparation, Experience, and Advice</p>
+      </div>
+    </div>
+<!-- main -->
+    <div class="main">
+      <h2>What is the PJPT?</h2>
+      <div class="image-right">
+        <p>As I progressed along my journey to learn about computer security and what it takes to become a successful security engineer, I became interested in certification and additional learning to take my understanding of offensive security to the next level. In passing, I had heard of the <a href="https://certifications.tcm-sec.com/pjpt" target="_blank" rel="noopener"><b>PJPT</b></a>, the Practical Junior Penetration Tester certification offered by TCM Security. This was about the time I started working on Hack the Box and preparing writeups for boxes similar to those in the <a href="byte-easy.html" target="_blank">Byte Bashers</a> article, and since I had recently earned my Security+ from CompTIA, I brushed it aside and kept working on boxes. A little later on, it came up again in a discussion with a coworker who had already completed the exam and earned their PJPT certificate.</p>
+        <p>Hearing about the exam again, something interesting caught my attention that I missed earlier: the <i>practical</i> portion of the program. With the previous certificates I had earned, they involved a rigid structure of memorization and repetition, i.e. learn about a topic and then repeat it back in a multiple-choice question on the exam. PJPT takes this concept and throws it out the window when you are working in a timed lab environment and there is an objective at hand. No multiple-choice or prompt-based question is going to appear when you're working in a live engagement, so why prepare for that kind of format? This intrigued me and eventually led to my signing up for the PJPT training and exam.</p>
+      </div>
+      <h2>Preparing for the PJPT</h2>
+      <div>
+        <p>PJPT is meant to be an introductory examination in preparation for later certifications like the <a href="https://certifications.tcm-sec.com/pnpt" target="_blank" rel="noopener"><b>PNPT</b></a> (Practical Network Penetration Tester, which I plan to complete later). Because PNPT was developed before PJPT, the materials for PJPT are part of what is needed for PNPT. This creates a natural progression from Junior to Network, especially since one is meant to be a prerequisite for the next.</p>
+        <p>When you pay for a certification attempt for the PJPT, you receive access to the course materials for a whole year after purchase. The course materials are essential to completing this course, but if you know your way around a penetration test you will already know most of the training material. What's nice is that as part of the initial certification attempt, you are given a <b>free retake</b>. This became important for me as I was taking the exam because it brought peace of mind during a critical time; it helped lower the stakes of the exam a little bit knowing that at the end of the day, if I didn't pass the first attempt, I had a second chance I could use.<p>
+        <p>Because this was an introductory certification, and the first professional certification that I have done for penetration testing and offensive security, I took my time and went through the training material in its entirety. Another element that helps set this certification apart from others I have experienced is the presence of <b>report-writing</b>. As part of the PJPT exam, you are given a set amount of time to write a comprehensive penetration testing report (write-up) following your time attacking the environment. This not only encourages you to take good notes during the exercise, but it also prepares you for professional penetration testing engagements - a valuable skill that compounds when paired with a live exercise.</p>
+        <p>There are plenty of exercises in the course, especially in the Active Directory section, where you can follow along using a VM setup and replicate the instructor's environment. There are even setup instructions as part of the training materials to ensure you can successfully spin up a VM you can use to connect to the exam environment, and there were some training boxes around the midpoint of the course that you could set up as virtual machines and practice against to prepare for the exam. These environments go beyond a standard Kioptrix deployment and test your reconnaissance, enumeration, and exploitation skills. The midpoint boxes were instrumental for me as I prepared for the exam and served as good companions to the work I was doing on Hack the Box.</p>
+      </div>
+      <h2>The Exam</h2>
+      <div>
+        <p>It had been a couple of months since finishing the PJPT prep materials, and I found myself in another position of waiting for the right time to take the next step and book my exam. I was also settling in to my new role at the time, which further detracted from my ability and willingness to sit for the exam. Knowing the exam would be a full 4-day commitment, I suddenly found myself in June with a free weekend in hand and I decided that would be the time to sit for the exam. I had set a goal for myself to knock out more HTB boxes before attempting the exam; while I didn't meet my goal, I felt I had gathered enough experience and confidence to sit for the exam and at least give it a good first attempt.</p>
+        <p>While I can't share exact details of the exam with you, I can share some general information about how it went and my feelings through the process. The PJPT exam is formatted into two 2-day chunks: the first 48 hours are when the exam environment opens and you can test the machine, and the second 48 hours are used for writing the report and sending it in to be manually reviewed. As soon as I had started the clock and opened the exam, a familiar feeling came to me that I had only associated with pen and paper exams back in college: <i>Oh no, I studied exactly the wrong things!</i> That's not the feeling you want to have in an exam, especially less so if you're running an actual engagement.</p>
+        <p>Through the notes I had taken from the training material as well as my experience from former HTB boxes, I ran through my enumeration checklist and got to work. A significant portion of the training material covers <b>Active Directory (AD)</b> enumeration and exploitation; this came in handy in the exam. From the <a href="byte-easy.html" target="_blank">Byte Bashers</a> article, I had intentionally chosen a Windows box called <b>Support</b> that introduced me to a lot of Windows-centric topics before I had formally covered them in the PJPT training material. This served me well as I began to collect information about my target and weave my way closer to the goal.</p>
+        <p>Along the way, that nagging feeling of impostor syndrome kept creeping up, especially as I hit roadblock after roadblock and needed to pivot to different strategies. I remember a particular moment about midway through the exam when I was washing dishes during a brain break and started to accept the fact that I was not going to pass this exam on the first try. Just a short moment later, another idea popped into my head of something else to try, some other vector to consider, and I found myself back at my desk in short order trying things out for the sake of trying them out. Every roadblock I encountered gave me struggle, sure, but eventually it gave way, and I was able to chain attacks together, gather evidence, and compromise the entire domain with about 3 hours to go in the first half. I felt relieved!</p>
+        <p>Then came the report-writing segment. Naturally I took a break after compromising the domain and waited a little bit to actually start writing the report. There is a sample template provided, so I used that as the skeleton of my report and filled in the information I had gathered from the first half. I had collected about 20 pages' worth of information and had logged off at the end of the third night when I was browsing some forums and found a good piece of advice from someone who did not pass the exam on their first attempt, even after compromising the domain and presenting their evidence. I'll paraphrase the key message:</p>
+        <h3 class="quote">
+          <i>Simply copying and pasting the sample report isn't enough. You need to explain your findings, how you reached them, best practices for security standards, and how to remediate them. You should write the remediation steps with enough clarity that a junior sysadmin can understand your findings and apply the fixes without needing to use Google.</i>
+        </h3>
+        <p>This moment of clarity at 11:30 on a Sunday night could not have come at a better time. This is what helped take my report to the next level: adding an additional level of clarity and understanding beyond what the template provided. Incorporating a mental checkpoint helped as well; as a former junior sysadmin, I could resonate with boiling down highly-technical information into something better understood by a more general audience. While this extra information more than doubled the size of my final report, it is a significant reason why I passed the PJPT exam on my first attempt.</p>
+      <h2>My Advice</h2>
+      <div>
+        <p>For someone looking to take the PJPT exam, or for those curious about a professional engagement-style exam like the PJPT, a good piece of advice is to <b>never doubt yourself</b> when you're looking for the answer. For some people, it takes only a couple of hours to compromise the domain; for others, 48 hours isn't enough. It was barely enough for me, but that's in part because I tended to follow loose ends for a little too long. The key message here is that you shouldn't give up, even when things seem bleak.</p>
+        <p>Another good piece of advice I have is to <b>take brain breaks.</b> It's very easy to get stuck if you don't take breaks. Standing up, moving away from the desk, eating a meal, taking a walk, or doing something other than focusing on the exam will help your mind reset, think about other possibilities, and give you some ammunition to return to the table with. Make sure to get proper sleep, stay hydrated, get some exercise in, and don't lose sight of the end goal. This certificate is less a sprint and more a marathon, make sure to approach it that way.</p>
+        <p>Perhaps most importantly, <b>take good notes.</b> This applies not only to the training, but also in the exam, during other boxes, etc. This comes into handy when you encounter something you have seen before in a penetration test, but it is also advantageous when you are collecting evidence for your formal report. <b>Taking screenshots</b> is a critical part of taking notes; that way, you will have proper evidence to document findings and identify issues that you will note in your final report.</p>
+      </div>
+      </div>
+<!-- footer -->
+      <p><i>Published August 2026</i></p>
+    </div>
+    <footer>
+      <a href="https://www.github.com/nmuskopf">
+        <img src="assets/img/github.png" alt="Click to visit my GitHub repository">
+      </a>
+      <a href="https://www.linkedin.com/in/nmuskopfstone">
+        <img src="assets/img/linkedin.png" alt="Click to visit my LinkedIn profile">
+      </a>
+      <a href="mailto:nick@nmuskopf.com">
+        <img src="assets/img/email.png" alt="Click to send me an email message at nick@nmuskopf.com">
+      </a>
+      <p>© 2026 Nick Muskopf-Stone</p>
+    </footer>
+  </body>
+  <script src="js/scripts.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+</html>
